@@ -299,7 +299,7 @@ class SalarySheetController extends Controller
 
             // Check if this is an update (existing salary sheet ID provided) or create new
             $isUpdate = !empty($request->salary_sheet_id);
-            
+
             if ($isUpdate) {
                 // Update existing salary sheet
                 $salarySheet = SalarySheet::findOrFail($request->salary_sheet_id);
@@ -308,24 +308,23 @@ class SalarySheetController extends Controller
                     'location' => $request->location,
                     'notes' => $request->notes,
                 ]);
-                
+
                 // Delete existing items to recreate them
                 EmployersSalarySheetItem::where('sheet_no', $salarySheet->sheet_no)->delete();
-                
+
                 Log::info('Updated existing salary sheet:', $salarySheet->toArray());
             } else {
                 // Create new salary sheet
                 $sheetNumber = SalarySheet::generateSheetNumber();
 
-                $salarySheet = SalarySheet::create([
-                    'sheet_no' => $salarySheet->sheet_no,
+                 SalarySheet::create([
+                    'sheet_no' => $request->sheet_number,
                     'job_id' => $request->job_id,
                     'status' => $request->status,
                     'location' => $request->location,
                     'notes' => $request->notes,
                 ]);
 
-                Log::info('Created new salary sheet:', $salarySheet->toArray());
             }
 
             // Process each promoter row
@@ -395,7 +394,7 @@ class SalarySheetController extends Controller
                     'payment_data' => $paymentData,
                     'coordinator_details' => $coordinatorDetails,
                     'job_id' => $request->job_id,
-                    'sheet_no' => $salarySheet->sheet_no,
+                    'sheet_no' => $request->sheet_no,
                 ]);
 
                 $createdItems[] = $item->no;
@@ -416,6 +415,8 @@ class SalarySheetController extends Controller
             return redirect()->route('admin.salary-sheets.index')
                 ->with('success', 'Salary sheet ' . $action . ' successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
         } catch (\Exception $e) {
+
+            dd($e);
             Log::error('Error processing salary sheet:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

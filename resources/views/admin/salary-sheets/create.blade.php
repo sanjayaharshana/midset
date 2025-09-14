@@ -2399,6 +2399,7 @@ function updateTableRows(jsonData) {
     
     // Update grand total after all rows are processed and calculations are done
     setTimeout(() => {
+        console.log('Updating grand total after all rows processed...');
         calculateGrandTotal();
         console.log('Grand total updated after pulling data');
     }, 200);
@@ -2503,9 +2504,22 @@ function addPromoterRowFromJson(rowData, index) {
             updateCoordinatorDisplay(index + 1, coordinatorSelect);
         }
         
-        // Trigger calculations after data is loaded
+        // Trigger all calculations after data is loaded
         calculateRowTotal(index + 1);
-        calculateAttendanceAmount(index + 1);
+        
+        // Get present days for attendance amount calculation
+        const totalInput = row.querySelector(`input[name="rows[${index + 1}][attendance_total]"]`);
+        const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
+        calculateAttendanceAmount(index + 1, presentDays);
+        
+        calculateRowNet(index + 1);
+        
+        // Ensure amount field is set from attendance amount
+        const attendanceAmountInput = row.querySelector(`input[name="rows[${index + 1}][attendance_amount]"]`);
+        const amountInput = row.querySelector(`input[name="rows[${index + 1}][amount]"]`);
+        if (attendanceAmountInput && amountInput) {
+            amountInput.value = attendanceAmountInput.value;
+        }
     }, 100);
     
     console.log(`Row ${index + 1} added successfully`);
@@ -2555,6 +2569,41 @@ function pullExistingData() {
             
             // Update table rows
             updateTableRows(jsonData);
+            
+            // Trigger all calculations after data is loaded
+            setTimeout(() => {
+                console.log('Triggering all calculations after pull data...');
+                
+                // Calculate attendance totals and amounts for each row
+                const rows = document.querySelectorAll('#promoterRows tr');
+                rows.forEach((row, index) => {
+                    const rowNum = index + 1;
+                    console.log(`Calculating for row ${rowNum}`);
+                    
+                    // Trigger attendance calculations
+                    calculateRowTotal(rowNum);
+                    
+                    // Get present days for attendance amount calculation
+                    const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+                    const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
+                    calculateAttendanceAmount(rowNum, presentDays);
+                    
+                    // Trigger net amount calculations
+                    calculateRowNet(rowNum);
+                    
+                    // Ensure amount field is set from attendance amount
+                    const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
+                    const amountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
+                    if (attendanceAmountInput && amountInput) {
+                        amountInput.value = attendanceAmountInput.value;
+                    }
+                });
+                
+                // Update grand total
+                calculateGrandTotal();
+                
+                console.log('All calculations completed after pull data');
+            }, 300);
             
             showPullDataStatus('Data pulled successfully!', 'success');
             
