@@ -516,8 +516,17 @@ class SalarySheetController extends Controller
                 // Extract payment data
                 $paymentData = $item->payment_data ?? [];
 
-                // Extract coordinator data
+                // Extract coordinator data and find the correct coordinator ID
                 $coordinatorData = $item->coordinator_details ?? [];
+                $coordinatorDatabaseId = null;
+                
+                if (!empty($coordinatorData['coordinator_id'])) {
+                    // Find coordinator by their custom ID to get the database ID
+                    $coordinator = Coordinator::where('coordinator_id', $coordinatorData['coordinator_id'])->first();
+                    if ($coordinator) {
+                        $coordinatorDatabaseId = $coordinator->id;
+                    }
+                }
 
                 // Build row data
                 $rowData = [
@@ -534,7 +543,7 @@ class SalarySheetController extends Controller
                     'accommodation_allowance' => $paymentData['accommodation_allowance'] ?? 0,
                     'hold_for_8_weeks' => $paymentData['hold_for_weeks'] ?? 0,
                     'net_amount' => (float) $paymentData['net_amount'] ?? 0,
-                    'coordinator_id' => $coordinatorData['coordinator_id'] ?? null,
+                    'coordinator_id' => $coordinatorDatabaseId,
                     'current_coordinator' => $coordinatorData['current_coordinator'] ?? null,
                     'coordination_fee' => $coordinatorData['amount'] ?? null
                 ];

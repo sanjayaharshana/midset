@@ -1354,6 +1354,10 @@ function addPromoterRow() {
 
     const tbody = document.getElementById('promoterRows');
     const row = document.createElement('tr');
+    
+    // Calculate the next row number based on existing rows
+    const existingRows = tbody.querySelectorAll('tr');
+    const nextRowNumber = existingRows.length + 1;
 
     // Generate attendance inputs based on current dates
     let attendanceInputs = '';
@@ -1362,25 +1366,25 @@ function addPromoterRow() {
 
     if (currentAttendanceDates && currentAttendanceDates.length > 0) {
         attendanceInputs = currentAttendanceDates.map(date =>
-            `<input type="number" class="table-input-small" name="rows[${rowCounter}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${rowCounter})" placeholder="0/1">`
+            `<input type="number" class="table-input-small" name="rows[${nextRowNumber}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${nextRowNumber})" placeholder="0/1">`
         ).join('');
         console.log('addPromoterRow - Generated attendance inputs with dates:', attendanceInputs.substring(0, 200));
     } else {
         // Fallback: create 6 default attendance inputs if no dates are available
         attendanceInputs = Array.from({length: 6}, (_, i) =>
-            `<input type="number" class="table-input-small" name="rows[${rowCounter}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${rowCounter})" placeholder="0/1">`
+            `<input type="number" class="table-input-small" name="rows[${nextRowNumber}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${nextRowNumber})" placeholder="0/1">`
         ).join('');
         console.log('addPromoterRow - Generated fallback attendance inputs:', attendanceInputs.substring(0, 200));
     }
 
     row.innerHTML = `
-        <td style="text-align: center; font-weight: bold;">${rowCounter}</td>
+        <td style="text-align: center; font-weight: bold;">${nextRowNumber}</td>
         <td>
-            <input type="text" class="table-input" name="rows[${rowCounter}][location]" placeholder="Location">
+            <input type="text" class="table-input" name="rows[${nextRowNumber}][location]" placeholder="Location">
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${rowCounter}][promoter_id]" onchange="updatePromoterDetails(${rowCounter}, this)">
+                <select class="table-input-small" name="rows[${nextRowNumber}][promoter_id]" onchange="updatePromoterDetails(${nextRowNumber}, this)">
                     <option value="">Select</option>
                     ${promoters.map(promoter => {
                         const positionName = promoter.position ? promoter.position.position_name : 'No Position';
@@ -1395,46 +1399,59 @@ function addPromoterRow() {
                                 data-position-id="${promoter.position_id || ''}">${promoter.promoter_id}</option>`;
                     }).join('')}
                 </select>
-                <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${rowCounter}][promoter_name]" readonly data-tooltip="">
-                <input type="text" class="table-input-small table-input-readonly" name="rows[${rowCounter}][position]" readonly>
+                <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${nextRowNumber}][promoter_name]" readonly data-tooltip="">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][position]" readonly>
             </div>
         </td>
-        <td id="attendanceCell-${rowCounter}" style="display: table-cell; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
+        <td id="attendanceCell-${nextRowNumber}" style="display: table-cell; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
             <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
                 ${attendanceInputs}
-                <input type="number" class="table-input-small calculated-cell" name="rows[${rowCounter}][attendance_total]" readonly>
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowCounter}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days">
+                <input type="number" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_total]" readonly>
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days">
             </div>
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowCounter}][amount]" readonly title="Auto-calculated from Attendance Amount">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${rowCounter}][food_allowance]" onchange="calculateRowNet(${rowCounter})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${rowCounter}][expenses]" onchange="calculateRowNet(${rowCounter})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${rowCounter}][accommodation_allowance]" onchange="calculateRowNet(${rowCounter})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${rowCounter}][hold_for_8_weeks]" onchange="calculateRowNet(${rowCounter})">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowCounter}][net_amount]" readonly>
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][amount]" readonly title="Auto-calculated from Attendance Amount">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][food_allowance]" onchange="calculateRowNet(${nextRowNumber})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][expenses]" onchange="calculateRowNet(${nextRowNumber})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][accommodation_allowance]" onchange="calculateRowNet(${nextRowNumber})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${nextRowNumber})">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][net_amount]" readonly>
             </div>
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${rowCounter}][coordinator_id]" onchange="updateCoordinatorDisplay(${rowCounter}, this)">
+                <select class="table-input-small" name="rows[${nextRowNumber}][coordinator_id]" onchange="updateCoordinatorDisplay(${nextRowNumber}, this)">
                     <option value="">Select</option>
                     ${coordinators.map(coordinator =>
                         `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}">${coordinator.coordinator_id}</option>`
                     ).join('')}
                 </select>
-                <input type="text" class="table-input-small table-input-readonly" name="rows[${rowCounter}][current_coordinator]" readonly>
-                <input type="number" step="0.01" class="table-input-small" name="rows[${rowCounter}][coordination_fee]" onchange="calculateRowNet(${rowCounter})">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][current_coordinator]" readonly>
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][coordination_fee]" onchange="calculateRowNet(${nextRowNumber})">
             </div>
         </td>
         <td>
-            <button type="button" class="btn-danger" onclick="removeRow(${rowCounter})">×</button>
+            <button type="button" class="btn-danger" onclick="removeRow(${nextRowNumber})">×</button>
         </td>
     `;
 
     tbody.appendChild(row);
-    rowCounter++;
+    
+    // Update the global rowCounter to match the actual number of rows
+    rowCounter = nextRowNumber;
+    
+    // Trigger initial calculations for the new row
+    setTimeout(() => {
+        console.log(`Triggering calculations for new row ${nextRowNumber}`);
+        calculateRowTotal(nextRowNumber);
+        calculateAttendanceAmount(nextRowNumber);
+        calculateRowNet(nextRowNumber);
+        calculateGrandTotal();
+    }, 100);
+    
+    console.log(`Added promoter row ${nextRowNumber} successfully`);
 }
 
 function updatePromoterTooltip(inputElement, promoter) {
@@ -2477,7 +2494,8 @@ function addPromoterRowFromJson(rowData, index) {
                 <select class="table-input-small" name="rows[${index + 1}][coordinator_id]" onchange="updateCoordinatorDisplay(${index + 1}, this)">
                     <option value="">Select</option>
                     ${coordinators.map(coordinator => {
-                        const selected = coordinator.id == rowData.coordinator_id ? 'selected' : '';
+                        const selected = (coordinator.id == rowData.coordinator_id || coordinator.id == parseInt(rowData.coordinator_id)) ? 'selected' : '';
+                        console.log(`Coordinator comparison: coordinator.id=${coordinator.id}, rowData.coordinator_id=${rowData.coordinator_id}, selected=${selected}`);
                         return `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}" ${selected}>${coordinator.coordinator_id}</option>`;
                     }).join('')}
                 </select>
