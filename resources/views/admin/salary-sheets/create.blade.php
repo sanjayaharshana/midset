@@ -2036,7 +2036,23 @@ function calculateRowNet(rowNum) {
     const holdFor8Weeks = parseFloat(row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`).value) || 0;
     const coordinationFee = parseFloat(row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`).value) || 0;
 
-    const netAmount = amount + foodAllowance + accommodationAllowance + coordinationFee - expenses - holdFor8Weeks;
+    // Calculate net amount: Earnings - Deductions
+    const totalEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
+    const totalDeductions = expenses + holdFor8Weeks;
+    const netAmount = totalEarnings - totalDeductions;
+    
+    console.log(`Row ${rowNum} Net Calculation:`, {
+        amount: amount,
+        foodAllowance: foodAllowance,
+        accommodationAllowance: accommodationAllowance,
+        coordinationFee: coordinationFee,
+        totalEarnings: totalEarnings,
+        expenses: expenses,
+        holdFor8Weeks: holdFor8Weeks,
+        totalDeductions: totalDeductions,
+        netAmount: netAmount
+    });
+    
     row.querySelector(`input[name="rows[${rowNum}][net_amount]"]`).value = netAmount.toFixed(2);
 
     calculateGrandTotal();
@@ -2047,7 +2063,7 @@ function calculateGrandTotal() {
     let totalEarnings = 0;
     let totalDeductions = 0;
 
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
         const amount = parseFloat(row.querySelector('input[name$="[amount]"]')?.value) || 0;
         const foodAllowance = parseFloat(row.querySelector('input[name$="[food_allowance]"]')?.value) || 0;
         const accommodationAllowance = parseFloat(row.querySelector('input[name$="[accommodation_allowance]"]')?.value) || 0;
@@ -2055,11 +2071,31 @@ function calculateGrandTotal() {
         const expenses = parseFloat(row.querySelector('input[name$="[expenses]"]')?.value) || 0;
         const holdFor8Weeks = parseFloat(row.querySelector('input[name$="[hold_for_8_weeks]"]')?.value) || 0;
 
-        totalEarnings += amount + foodAllowance + accommodationAllowance + coordinationFee;
-        totalDeductions += expenses + holdFor8Weeks;
+        const rowEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
+        const rowDeductions = expenses + holdFor8Weeks;
+        
+        totalEarnings += rowEarnings;
+        totalDeductions += rowDeductions;
+        
+        console.log(`Row ${index + 1} Grand Total Calculation:`, {
+            amount: amount,
+            foodAllowance: foodAllowance,
+            accommodationAllowance: accommodationAllowance,
+            coordinationFee: coordinationFee,
+            rowEarnings: rowEarnings,
+            expenses: expenses,
+            holdFor8Weeks: holdFor8Weeks,
+            rowDeductions: rowDeductions
+        });
     });
 
     const netSalary = totalEarnings - totalDeductions;
+    
+    console.log('Grand Total Calculation:', {
+        totalEarnings: totalEarnings,
+        totalDeductions: totalDeductions,
+        netSalary: netSalary
+    });
 
     document.getElementById('total-earnings').textContent = `Rs. ${totalEarnings.toFixed(2)}`;
     document.getElementById('total-deductions').textContent = `Rs. ${totalDeductions.toFixed(2)}`;
