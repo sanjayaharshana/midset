@@ -1610,9 +1610,6 @@ function updateAttendanceDates() {
             // Load position salary rules for the selected job
             loadPositionSalaryRules();
 
-            // Load existing salary sheets for this job
-            loadExistingSalarySheets(selectedOption.value);
-
             // Show table and hide message
             noJobMessage.style.display = 'none';
             salaryTableContainer.style.display = 'block';
@@ -2301,15 +2298,13 @@ function saveSalarySheet() {
             const fields = {
                 'promoter_id': promoterId,
                 'location': row.querySelector('input[name*="[location]"]')?.value || '',
-                'attendance_total': row.querySelector('input[name*="[attendance_total]"]')?.value || 0,
-                'attendance_amount': row.querySelector('input[name*="[attendance_amount]"]')?.value || 0,
-                'amount': row.querySelector('input[name*="[amount]"]')?.value || 0,
-                'food_allowance': row.querySelector('input[name*="[food_allowance]"]')?.value || 0,
-                'expenses': row.querySelector('input[name*="[expenses]"]')?.value || 0,
-                'accommodation_allowance': row.querySelector('input[name*="[accommodation_allowance]"]')?.value || 0,
-                'hold_for_8_weeks': row.querySelector('input[name*="[hold_for_8_weeks]"]')?.value || 0,
+                'attendance_days': row.querySelector('input[name*="[attendance_days]"]')?.value || 0,
+                'basic_salary': row.querySelector('input[name*="[basic_salary]"]')?.value || 0,
+                'ot_hours': row.querySelector('input[name*="[ot_hours]"]')?.value || 0,
+                'ot_rate': row.querySelector('input[name*="[ot_rate]"]')?.value || 0,
+                'ot_amount': row.querySelector('input[name*="[ot_amount]"]')?.value || 0,
+                'total_amount': row.querySelector('input[name*="[total_amount]"]')?.value || 0,
                 'coordinator_id': row.querySelector('select[name*="[coordinator_id]"]')?.value || '',
-                'coordination_fee': row.querySelector('input[name*="[coordination_fee]"]')?.value || 0,
             };
 
             console.log(`Row ${index} fields:`, fields); // Debug log
@@ -2392,62 +2387,9 @@ function saveSalarySheet() {
         console.log(`Input: ${input.name} = ${input.value}`);
     });
 
-    // Submit form via AJAX
-    const formData = new FormData(form);
-
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => {
-        console.log('Response received:', response);
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-
-        if (response.ok) {
-            return response.json();
-        } else {
-            return response.json().then(errorData => {
-                throw new Error(errorData.message || 'Network response was not ok');
-            });
-        }
-    })
-    .then(data => {
-        console.log('Response data:', data);
-
-        if (data.success) {
-            // Show success message
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message || 'Salary sheet saved successfully!',
-                confirmButtonText: 'OK'
-            }).then(() => {
-                window.location.href = data.redirect || "{{ route('admin.salary-sheets.index') }}";
-            });
-        } else {
-            throw new Error(data.message || 'Unknown error occurred');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Failed to save salary sheet: ' + error.message,
-            confirmButtonText: 'OK'
-        });
-    })
-    .finally(() => {
-        // Reset button state
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = originalText;
-    });
+    // Submit form normally (not AJAX)
+    console.log('Submitting form normally to:', form.action);
+    form.submit();
 }
 
 // Add first row automatically

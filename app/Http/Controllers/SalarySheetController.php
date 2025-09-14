@@ -287,8 +287,123 @@ class SalarySheetController extends Controller
         }
     }
 
-    public function enforce(Request  $request)
+    public function enforce(Request $request)
     {
-        dd($request);
+        // Debug: Log the incoming request data
+        Log::info('Salary Sheet Enforce Request:', $request->all());
+
+        try {
+            $job = Job::findOrFail($request->job_id);
+
+            Log::info('Processing rows:', $request->rows ?? []);
+
+            // Create the main salary sheet
+            $sheetNumber = SalarySheet::generateSheetNumber();
+
+            $salarySheet = SalarySheet::create([
+                'sheet_no' => $sheetNumber,
+                'job_id' => $request->job_id,
+                'status' => $request->status,
+                'location' => $request->location,
+                'notes' => $request->notes,
+            ]);
+
+            Log::info('Created salary sheet:', $salarySheet->toArray());
+
+            // Process each promoter row
+            $createdItems = [];
+            foreach ($request->rows as $rowData) {
+                if (empty($rowData['promoter_id'])) {
+                    continue; // Skip empty rows
+                }
+
+                Log::info('Processing row data:', $rowData);
+
+                // Get promoter to find position
+                $promoter = Promoter::find($rowData['promoter_id']);
+                if (!$promoter || !$promoter->position_id) {
+                    Log::warning('Promoter not found or no position assigned:', ['promoter_id' => $rowData['promoter_id']]);
+                    continue;
+                }
+
+                // Structure attendance data properly
+                $attendanceData = [];
+                if (isset($rowData['attendance']) && is_array($rowData['attendance'])) {
+                    foreach ($rowData['attendance'] as $date => $value) {
+                        $attendanceData[$date] = (int) $value;
+                    }
+                }
+
+                // Create structured attendance data with promoter information
+                $structuredAttendanceData = [
+                    'attendance' => $attendanceData,
+                    'total' => (int) ($rowData['attendance_days'] ?? 0),
+                    'amount' => (float) ($rowData['total_amount'] ?? 0),
+                    'promoter_id' => $rowData['promoter_id'],
+                    'promoter_name' => $promoter->promoter_name ?? 'Unknown',
+                    'position' => $promoter->position->position_name ?? 'Unknown'
+                ];
+
+                // Create payment data
+                $paymentData = [
+                    'amount' => (float) ($rowData['basic_salary'] ?? 0),
+                    'food_allowance' => 0, // Not in current form
+                    'expenses' => 0, // Not in current form
+                    'accommodation_allowance' => 0, // Not in current form
+                    'hold_for_weeks' => 0, // Not in current form
+                    'net_amount' => (float) ($rowData['total_amount'] ?? 0)
+                ];
+
+                // Create coordinator details
+                $coordinatorDetails = null;
+                if (!empty($rowData['coordinator_id'])) {
+                    $coordinator = Coordinator::find($rowData['coordinator_id']);
+                    $coordinatorDetails = [
+                        'coordinator_id' => $coordinator->coordinator_id ?? $rowData['coordinator_id'],
+                        'current_coordinator' => $coordinator->coordinator_name ?? 'Unknown',
+                        'amount' => 0 // Not in current form
+                    ];
+                }
+
+                // Create the salary sheet item
+                $itemNumber = EmployersSalarySheetItem::generateItemNumber();
+
+                $item = EmployersSalarySheetItem::create([
+                    'no' => $itemNumber,
+                    'location' => $rowData['location'] ?? $request->location,
+                    'position_id' => $promoter->position_id,
+                    'attendance_data' => $structuredAttendanceData,
+                    'payment_data' => $paymentData,
+                    'coordinator_details' => $coordinatorDetails,
+                    'job_id' => $request->job_id,
+                    'sheet_no' => $sheetNumber,
+                ]);
+
+                $createdItems[] = $item->no;
+
+                Log::info('Created salary sheet item:', $item->toArray());
+            }
+
+            if (empty($createdItems)) {
+                Log::warning('No salary sheet items were created');
+                return redirect()->back()
+                    ->withErrors(['error' => 'No valid salary sheet items were created. Please ensure at least one promoter is selected.'])
+                    ->withInput();
+            }
+
+            Log::info('Successfully created salary sheet with items:', $createdItems);
+
+            return redirect()->route('admin.salary-sheets.index')
+                ->with('success', 'Salary sheet created successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
+        } catch (\Exception $e) {
+            Log::error('Error creating salary sheet:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to create salary sheet: ' . $e->getMessage()])
+                ->withInput();
+        }
     }
 }
