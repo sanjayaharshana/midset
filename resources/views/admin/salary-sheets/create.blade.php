@@ -1429,7 +1429,7 @@ function addPromoterRow() {
                     ).join('')}
                 </select>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][current_coordinator]" readonly>
-                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][coordination_fee]" onchange="calculateRowNet(${nextRowNumber})">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days">
             </div>
         </td>
         <td>
@@ -2042,6 +2042,31 @@ function calculateRowTotal(rowNum) {
 }
 
 // Function to calculate attendance amount based on position salary and present days
+// Coordinator Fee Calculation
+function calculateCoordinatorFee(rowNum) {
+    const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
+    if (!row) return;
+    
+    // Get present days
+    const attendanceTotalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+    const presentDays = parseFloat(attendanceTotalInput?.value) || 0;
+    
+    // Get default coordinator fee from job settings
+    const defaultCoordinatorFee = parseFloat(document.getElementById('defaultCoordinatorFee')?.value) || 0;
+    
+    // Calculate coordinator fee: default_coordinator_fee * present_days
+    const calculatedCoordinatorFee = defaultCoordinatorFee * presentDays;
+    
+    // Update the coordination fee field
+    const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
+    if (coordinationFeeInput) {
+        coordinationFeeInput.value = calculatedCoordinatorFee.toFixed(2);
+        
+        // Trigger row net calculation since coordinator fee changed
+        calculateRowNet(rowNum);
+    }
+}
+
 function calculateAttendanceAmount(rowNum, presentDays) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
     if (!row) return;
@@ -2059,8 +2084,15 @@ function calculateAttendanceAmount(rowNum, presentDays) {
         const paymentAmountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
         if (paymentAmountInput) {
             paymentAmountInput.value = '0.00';
-            calculateRowNet(rowNum);
         }
+        
+        // Clear coordinator fee when no promoter selected
+        const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
+        if (coordinationFeeInput) {
+            coordinationFeeInput.value = '0.00';
+        }
+        
+        calculateRowNet(rowNum);
         return;
     }
 
@@ -2080,8 +2112,15 @@ function calculateAttendanceAmount(rowNum, presentDays) {
         const paymentAmountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
         if (paymentAmountInput) {
             paymentAmountInput.value = '0.00';
-            calculateRowNet(rowNum);
         }
+        
+        // Clear coordinator fee when promoter not found
+        const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
+        if (coordinationFeeInput) {
+            coordinationFeeInput.value = '0.00';
+        }
+        
+        calculateRowNet(rowNum);
         return;
     }
 
@@ -2101,6 +2140,10 @@ function calculateAttendanceAmount(rowNum, presentDays) {
     const paymentAmountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
     if (paymentAmountInput) {
         paymentAmountInput.value = attendanceAmount.toFixed(2);
+        
+        // Calculate coordinator fee based on present days
+        calculateCoordinatorFee(rowNum);
+        
         // Trigger net calculation since amount changed
         calculateRowNet(rowNum);
     }
@@ -2374,7 +2417,7 @@ function loadSalarySheetAsRow(sheet, index) {
                     ).join('')}
                 </select>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][coordinator_name]" readonly value="${coordinatorName}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][coordination_fee]" value="${sheet.coordination_fee || 0}" placeholder="Fee" onchange="calculateRowNet(${index})">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days" value="${sheet.coordination_fee || 0}">
             </div>
         </td>
         <td>
@@ -2636,7 +2679,7 @@ function addPromoterRowFromJson(rowData, index) {
                     }).join('')}
                 </select>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][current_coordinator]" readonly value="${rowData.current_coordinator || ''}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][coordination_fee]" onchange="calculateRowNet(${index + 1})" value="${rowData.coordination_fee || 0}">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days" value="${rowData.coordination_fee || 0}">
             </div>
         </td>
         <td>
@@ -3384,6 +3427,13 @@ function loadJobSettings(jobId) {
         document.getElementById('defaultExpenses').value = selectedJob.default_expenses || '';
         document.getElementById('defaultLocation').value = selectedJob.default_location || '';
         document.getElementById('locationNotes').value = selectedJob.location_notes || '';
+        
+        // Recalculate coordinator fees for all existing rows
+        const rows = document.querySelectorAll('tr:has(input[name*="[amount]"])');
+        rows.forEach((row, index) => {
+            const rowNum = index + 1;
+            calculateCoordinatorFee(rowNum);
+        });
     }
 }
 
@@ -3486,10 +3536,8 @@ function applySettingsToAllRows() {
     rows.forEach(row => {
         const rowNum = getRowNumberFromElement(row);
 
-        if (coordinatorFee) {
-            const coordinatorFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
-            if (coordinatorFeeInput) coordinatorFeeInput.value = coordinatorFee;
-        }
+        // Calculate coordinator fee based on present days instead of just setting default
+        calculateCoordinatorFee(rowNum);
 
         if (holdFor8Weeks) {
             const holdInput = row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`);
