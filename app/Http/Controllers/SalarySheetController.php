@@ -297,24 +297,28 @@ class SalarySheetController extends Controller
 
             Log::info('Processing rows:', $request->rows ?? []);
 
-            // Check if this is an update (existing salary sheet ID provided) or create new
-            $isUpdate = !empty($request->salary_sheet_id);
-
-            if ($isUpdate) {
-                // Update existing salary sheet
-                $salarySheet = SalarySheet::findOrFail($request->salary_sheet_id);
+            // SALARY_SHEET TABLE LOGIC: Check if data exists for job_id
+            // If exists: UPDATE the existing record
+            // If not exists: INSERT new record
+            
+            $existingSalarySheet = SalarySheet::where('job_id', $request->job_id)->first();
+            
+            if ($existingSalarySheet) {
+                // UPDATE: Existing salary sheet found for this job_id
+                $salarySheet = $existingSalarySheet;
                 $salarySheet->update([
                     'status' => $request->status,
                     'location' => $request->location,
                     'notes' => $request->notes,
                 ]);
-
-                // Delete existing items to recreate them
-                EmployersSalarySheetItem::where('sheet_no', $salarySheet->sheet_no)->delete();
-
-                Log::info('Updated existing salary sheet:', $salarySheet->toArray());
+                
+                Log::info('Updated existing salary sheet for job_id:', [
+                    'job_id' => $request->job_id,
+                    'sheet_no' => $salarySheet->sheet_no,
+                    'updated_data' => $salarySheet->toArray()
+                ]);
             } else {
-                // Create new salary sheet with retry mechanism for unique constraint violations
+                // INSERT: No existing salary sheet for this job_id, create new
                 $maxRetries = 3;
                 $retryCount = 0;
                 $salarySheet = null;
@@ -331,7 +335,11 @@ class SalarySheetController extends Controller
                             'notes' => $request->notes,
                         ]);
 
-                        Log::info('Created new salary sheet:', $salarySheet->toArray());
+                        Log::info('Created new salary sheet for job_id:', [
+                            'job_id' => $request->job_id,
+                            'sheet_no' => $sheetNumber,
+                            'created_data' => $salarySheet->toArray()
+                        ]);
                         break; // Success, exit the retry loop
                         
                     } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
@@ -347,6 +355,15 @@ class SalarySheetController extends Controller
                     }
                 }
             }
+            
+            // EMPLOYERS_SALARY_SHEET_ITEM TABLE LOGIC: Always remove all items with same sheet_no, then insert everything fresh
+            // This ensures clean data without duplicates or orphaned records
+            
+            $deletedItemsCount = EmployersSalarySheetItem::where('sheet_no', $salarySheet->sheet_no)->delete();
+            Log::info('Removed existing salary sheet items:', [
+                'sheet_no' => $salarySheet->sheet_no,
+                'deleted_count' => $deletedItemsCount
+            ]);
 
             // Process each promoter row
             $createdItems = [];
@@ -355,7 +372,7 @@ class SalarySheetController extends Controller
             if (!$salarySheet || !$salarySheet->sheet_no) {
                 Log::error('SalarySheet is null or sheet_no is empty:', [
                     'salarySheet' => $salarySheet ? $salarySheet->toArray() : 'null',
-                    'isUpdate' => $isUpdate
+                    'existingSalarySheet' => $existingSalarySheet ? 'found' : 'not found'
                 ]);
                 throw new \Exception('SalarySheet is not properly initialized');
             }
@@ -444,7 +461,7 @@ class SalarySheetController extends Controller
 
             Log::info('Successfully processed salary sheet with items:', $createdItems);
 
-            $action = $isUpdate ? 'updated' : 'created';
+            $action = $existingSalarySheet ? 'updated' : 'created';
             return redirect()->route('admin.salary-sheets.index')
                 ->with('success', 'Salary sheet ' . $action . ' successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
         } catch (\Exception $e) {
@@ -453,7 +470,7 @@ class SalarySheetController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $action = $isUpdate ? 'update' : 'create';
+            $action = $existingSalarySheet ? 'update' : 'create';
             return redirect()->back()
                 ->withErrors(['error' => 'Failed to ' . $action . ' salary sheet: ' . $e->getMessage()])
                 ->withInput();
