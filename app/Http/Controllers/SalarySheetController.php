@@ -314,21 +314,54 @@ class SalarySheetController extends Controller
 
                 Log::info('Updated existing salary sheet:', $salarySheet->toArray());
             } else {
-                // Create new salary sheet
-                $sheetNumber = SalarySheet::generateSheetNumber();
+                // Create new salary sheet with retry mechanism for unique constraint violations
+                $maxRetries = 3;
+                $retryCount = 0;
+                $salarySheet = null;
 
-                 SalarySheet::create([
-                    'sheet_no' => $request->sheet_number,
-                    'job_id' => $request->job_id,
-                    'status' => $request->status,
-                    'location' => $request->location,
-                    'notes' => $request->notes,
-                ]);
+                while ($retryCount < $maxRetries && !$salarySheet) {
+                    try {
+                        $sheetNumber = SalarySheet::generateSheetNumber();
+                        
+                        $salarySheet = SalarySheet::create([
+                            'sheet_no' => $sheetNumber,
+                            'job_id' => $request->job_id,
+                            'status' => $request->status,
+                            'location' => $request->location,
+                            'notes' => $request->notes,
+                        ]);
 
+                        Log::info('Created new salary sheet:', $salarySheet->toArray());
+                        break; // Success, exit the retry loop
+                        
+                    } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                        $retryCount++;
+                        Log::warning("Duplicate sheet number detected, retry attempt {$retryCount}/{$maxRetries}: {$sheetNumber}");
+                        
+                        if ($retryCount >= $maxRetries) {
+                            throw new \Exception("Failed to generate unique sheet number after {$maxRetries} attempts");
+                        }
+                        
+                        // Small delay before retry
+                        usleep(100000); // 100ms
+                    }
+                }
             }
 
             // Process each promoter row
             $createdItems = [];
+            
+            // Debug: Check if salarySheet is properly set
+            if (!$salarySheet || !$salarySheet->sheet_no) {
+                Log::error('SalarySheet is null or sheet_no is empty:', [
+                    'salarySheet' => $salarySheet ? $salarySheet->toArray() : 'null',
+                    'isUpdate' => $isUpdate
+                ]);
+                throw new \Exception('SalarySheet is not properly initialized');
+            }
+            
+            Log::info('Processing salary sheet items for sheet_no:', ['sheet_no' => $salarySheet->sheet_no]);
+            
             foreach ($request->rows as $rowIndex => $rowData) {
                 if (empty($rowData['promoter_id'])) {
                     continue; // Skip empty rows
@@ -394,7 +427,7 @@ class SalarySheetController extends Controller
                     'payment_data' => $paymentData,
                     'coordinator_details' => $coordinatorDetails,
                     'job_id' => $request->job_id,
-                    'sheet_no' => $request->sheet_no,
+                    'sheet_no' => $salarySheet->sheet_no,
                 ]);
 
                 $createdItems[] = $item->no;
@@ -415,8 +448,6 @@ class SalarySheetController extends Controller
             return redirect()->route('admin.salary-sheets.index')
                 ->with('success', 'Salary sheet ' . $action . ' successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
         } catch (\Exception $e) {
-
-            dd($e);
             Log::error('Error processing salary sheet:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

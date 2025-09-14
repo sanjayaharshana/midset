@@ -35,18 +35,27 @@ class SalarySheet extends Model
         $year = date('Y');
         $month = date('n');
         
-        // Get the last sheet number for this month/year
-        $lastSheet = self::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
+        // Create the base pattern for this month/year
+        $basePattern = sprintf('%s/%d/%02d/', $prefix, $year, $month);
+        
+        // Get all sheet numbers that start with this pattern
+        $existingSheets = self::where('sheet_no', 'like', $basePattern . '%')
             ->orderBy('sheet_no', 'desc')
-            ->first();
+            ->pluck('sheet_no')
+            ->toArray();
 
-        if ($lastSheet) {
-            // Extract the sequence part and increment
-            $lastSequence = (int) substr($lastSheet->sheet_no, -3);
-            $nextSequence = $lastSequence + 1;
-        } else {
+        if (empty($existingSheets)) {
+            // No sheets exist for this month/year, start with 001
             $nextSequence = 1;
+        } else {
+            // Find the highest sequence number
+            $maxSequence = 0;
+            foreach ($existingSheets as $sheetNo) {
+                // Extract the sequence part (last 3 digits)
+                $sequence = (int) substr($sheetNo, -3);
+                $maxSequence = max($maxSequence, $sequence);
+            }
+            $nextSequence = $maxSequence + 1;
         }
 
         return sprintf('%s/%d/%02d/%03d', $prefix, $year, $month, $nextSequence);
