@@ -12,10 +12,7 @@
 
 @section('content')
 
-<form action="{{route('admin.salary.enforce')}}" method="post">
-    {{csrf_field()}}
-
-    <div class="card">
+<div class="card">
         <div class="card-header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Salary Sheet Management</h3>
@@ -61,7 +58,7 @@
             </div>
         </div>
         <div class="card-body">
-            <form id="salarySheetForm" action="{{ route('admin.salary-sheets.store') }}" method="POST">
+            <form id="salarySheetForm" action="{{ route('admin.salary.enforce') }}" method="POST">
                 @csrf
 
                 <!-- Basic Information -->
@@ -248,10 +245,6 @@
             </form>
         </div>
     </div>
-
-   <button type="submit">Submit Data</button>
-
-</form>
 
 <!-- Position Wise Salary Rule Modal -->
 <div id="salaryRuleModal" class="modal" style="display: none;">
@@ -2230,11 +2223,27 @@ function testSave() {
 }
 
 function saveSalarySheet() {
+    console.log('=== SAVE SALARY SHEET FUNCTION CALLED ===');
     console.log('Save function called'); // Debug log
 
     const form = document.getElementById('salarySheetForm');
-    const rows = document.querySelectorAll('#promoterRows tr');
+    console.log('Form element:', form);
+    console.log('Form action:', form ? form.action : 'Form not found');
+    console.log('Form method:', form ? form.method : 'Form not found');
+    console.log('Expected route: admin.salary.enforce');
+    
+    if (!form) {
+        console.error('ERROR: Form with ID "salarySheetForm" not found!');
+        Swal.fire({
+            icon: 'error',
+            title: 'Form Error',
+            text: 'Salary sheet form not found. Please refresh the page and try again.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
 
+    const rows = document.querySelectorAll('#promoterRows tr');
     console.log('Form found:', form); // Debug log
     console.log('Rows found:', rows.length); // Debug log
 
