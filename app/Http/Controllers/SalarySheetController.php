@@ -59,7 +59,7 @@ class SalarySheetController extends Controller
             $sheetNumber = SalarySheet::generateSheetNumber();
 
             $salarySheet = SalarySheet::create([
-                'sheet_no' => $sheetNumber,
+                'sheet_no' => $salarySheet->sheet_no,
                 'job_id' => $request->job_id,
                 'status' => $request->status,
                 'location' => $request->location,
@@ -140,7 +140,7 @@ class SalarySheetController extends Controller
                     'payment_data' => $paymentData,
                     'coordinator_details' => $coordinatorDetails,
                     'job_id' => $request->job_id,
-                    'sheet_no' => $sheetNumber,
+                    'sheet_no' => $salarySheet->sheet_no,
                 ]);
 
                 $createdItems[] = $item->no;
@@ -297,18 +297,36 @@ class SalarySheetController extends Controller
 
             Log::info('Processing rows:', $request->rows ?? []);
 
-            // Create the main salary sheet
-            $sheetNumber = SalarySheet::generateSheetNumber();
+            // Check if this is an update (existing salary sheet ID provided) or create new
+            $isUpdate = !empty($request->salary_sheet_id);
+            
+            if ($isUpdate) {
+                // Update existing salary sheet
+                $salarySheet = SalarySheet::findOrFail($request->salary_sheet_id);
+                $salarySheet->update([
+                    'status' => $request->status,
+                    'location' => $request->location,
+                    'notes' => $request->notes,
+                ]);
+                
+                // Delete existing items to recreate them
+                EmployersSalarySheetItem::where('sheet_no', $salarySheet->sheet_no)->delete();
+                
+                Log::info('Updated existing salary sheet:', $salarySheet->toArray());
+            } else {
+                // Create new salary sheet
+                $sheetNumber = SalarySheet::generateSheetNumber();
 
-            $salarySheet = SalarySheet::create([
-                'sheet_no' => $sheetNumber,
-                'job_id' => $request->job_id,
-                'status' => $request->status,
-                'location' => $request->location,
-                'notes' => $request->notes,
-            ]);
+                $salarySheet = SalarySheet::create([
+                    'sheet_no' => $salarySheet->sheet_no,
+                    'job_id' => $request->job_id,
+                    'status' => $request->status,
+                    'location' => $request->location,
+                    'notes' => $request->notes,
+                ]);
 
-            Log::info('Created salary sheet:', $salarySheet->toArray());
+                Log::info('Created new salary sheet:', $salarySheet->toArray());
+            }
 
             // Process each promoter row
             $createdItems = [];
@@ -377,7 +395,7 @@ class SalarySheetController extends Controller
                     'payment_data' => $paymentData,
                     'coordinator_details' => $coordinatorDetails,
                     'job_id' => $request->job_id,
-                    'sheet_no' => $sheetNumber,
+                    'sheet_no' => $salarySheet->sheet_no,
                 ]);
 
                 $createdItems[] = $item->no;
@@ -392,19 +410,109 @@ class SalarySheetController extends Controller
                     ->withInput();
             }
 
-            Log::info('Successfully created salary sheet with items:', $createdItems);
+            Log::info('Successfully processed salary sheet with items:', $createdItems);
 
+            $action = $isUpdate ? 'updated' : 'created';
             return redirect()->route('admin.salary-sheets.index')
-                ->with('success', 'Salary sheet created successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
+                ->with('success', 'Salary sheet ' . $action . ' successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
         } catch (\Exception $e) {
-            Log::error('Error creating salary sheet:', [
+            Log::error('Error processing salary sheet:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
+            $action = $isUpdate ? 'update' : 'create';
             return redirect()->back()
-                ->withErrors(['error' => 'Failed to create salary sheet: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Failed to ' . $action . ' salary sheet: ' . $e->getMessage()])
                 ->withInput();
+        }
+    }
+
+    /**
+     * Generate JSON data for salary sheet (API endpoint)
+     */
+    public function generateJsonData($salarySheetId)
+    {
+        try {
+            $salarySheet = SalarySheet::with(['job', 'items.position'])
+                ->findOrFail($salarySheetId);
+
+            Log::info('Generating JSON data for salary sheet:', $salarySheet->toArray());
+
+            // Base data structure
+            $jsonData = [
+                '_token' => csrf_token(),
+                'salary_sheet_id' => $salarySheet->id,
+                'sheet_number' => $salarySheet->sheet_no,
+                'job_id' => (string) $salarySheet->job_id,
+                'status' => $salarySheet->status,
+                'location' => $salarySheet->location,
+                'rows' => [],
+                'notes' => $salarySheet->notes
+            ];
+
+            // Process each item
+            foreach ($salarySheet->items as $index => $item) {
+                $rowIndex = $index + 1; // Start from 1, not 0
+
+                // Extract attendance data
+                $attendanceData = [];
+                if (isset($item->attendance_data['attendance']) && is_array($item->attendance_data['attendance'])) {
+                    foreach ($item->attendance_data['attendance'] as $date => $value) {
+                        // Convert 0 to null for consistency with your format
+                        $attendanceData[$date] = $value == 0 ? null : (string) $value;
+                    }
+                }
+
+                // Extract payment data
+                $paymentData = $item->payment_data ?? [];
+
+                // Extract coordinator data
+                $coordinatorData = $item->coordinator_details ?? [];
+
+                // Build row data
+                $rowData = [
+                    'location' => $item->location,
+                    'promoter_id' => (string) ($item->attendance_data['promoter_id'] ?? ''),
+                    'promoter_name' => $item->attendance_data['promoter_name'] ?? '',
+                    'position' => $item->attendance_data['position'] ?? ($item->position->position_name ?? ''),
+                    'attendance' => $attendanceData,
+                    'attendance_total' => (string) ($item->attendance_data['total'] ?? 0),
+                    'attendance_amount' => (float)$item->attendance_data['amount'] ?? 0,
+                    'amount' => (float) $paymentData['amount'] ?? 0,
+                    'food_allowance' => $paymentData['food_allowance'] ?? 0,
+                    'expenses' => $paymentData['expenses'] ?? 0,
+                    'accommodation_allowance' => $paymentData['accommodation_allowance'] ?? 0,
+                    'hold_for_8_weeks' => $paymentData['hold_for_weeks'] ?? 0,
+                    'net_amount' => (float) $paymentData['net_amount'] ?? 0,
+                    'coordinator_id' => $coordinatorData['coordinator_id'] ?? null,
+                    'current_coordinator' => $coordinatorData['current_coordinator'] ?? null,
+                    'coordination_fee' => $coordinatorData['amount'] ?? null
+                ];
+
+                // Convert null values to null (not empty strings)
+                foreach ($rowData as $key => $value) {
+                    if ($value === '' || $value === '0.00') {
+                        $rowData[$key] = null;
+                    }
+                }
+
+                $jsonData['rows'][(string) $rowIndex] = $rowData;
+            }
+
+            Log::info('Generated JSON data:', $jsonData);
+
+            return response()->json($jsonData);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating JSON data:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to generate JSON data: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

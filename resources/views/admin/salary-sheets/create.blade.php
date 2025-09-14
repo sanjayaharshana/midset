@@ -79,6 +79,18 @@
                             </select>
                         </div>
                         <div>
+                            <label style="font-size: 0.75rem; color: #6b7280; font-weight: 600;">PULL DATA</label>
+                            <button type="button" class="btn btn-success btn-sm" id="pullDataBtn" onclick="pullExistingData()" disabled style="width: 100%;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                    <path d="M21 3v5h-5"></path>
+                                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                    <path d="M3 21v-5h5"></path>
+                                </svg>
+                                Pull Data
+                            </button>
+                        </div>
+                        <div>
                             <label style="font-size: 0.75rem; color: #6b7280; font-weight: 600;">STATUS</label>
                             <select class="form-control" name="status" required>
                                 <option value="">Select Status</option>
@@ -1645,6 +1657,12 @@ function updateAttendanceDates() {
             // Load position salary rules for the selected job
             loadPositionSalaryRules();
 
+            // Enable Pull Data button when job is selected
+            const pullDataBtn = document.getElementById('pullDataBtn');
+            if (pullDataBtn) {
+                pullDataBtn.disabled = false;
+            }
+
             // Show table and hide message
             noJobMessage.style.display = 'none';
             salaryTableContainer.style.display = 'block';
@@ -1677,6 +1695,12 @@ function updateAttendanceDates() {
         // Disable buttons
         addPromoterBtn.disabled = true;
         salaryRuleBtn.disabled = true;
+        
+        // Disable Pull Data button when no job is selected
+        const pullDataBtn = document.getElementById('pullDataBtn');
+        if (pullDataBtn) {
+            pullDataBtn.disabled = true;
+        }
     }
 }
 
@@ -1884,12 +1908,31 @@ function getPositionSalary(positionId) {
 
 function calculateRowTotal(rowNum) {
     let total = 0;
+    
+    // Method 1: Use currentAttendanceDates if available
+    if (currentAttendanceDates && currentAttendanceDates.length > 0) {
     currentAttendanceDates.forEach(date => {
         const input = document.querySelector(`input[name="rows[${rowNum}][attendance][${date}]"]`);
         if (input && input.value) {
             total += parseFloat(input.value) || 0;
         }
     });
+    }
+    
+    // Method 2: Fallback - find all attendance inputs in the row
+    if (total === 0) {
+        const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][promoter_id]"])`);
+        if (row) {
+            const attendanceInputs = row.querySelectorAll('input[name*="[attendance]"]');
+            attendanceInputs.forEach(input => {
+                const name = input.name;
+                // Only count actual attendance inputs, not the total/amount inputs
+                if (name.includes('[attendance][') && !name.includes('[attendance_total]') && !name.includes('[attendance_amount]')) {
+                    total += parseFloat(input.value) || 0;
+                }
+            });
+        }
+    }
 
     const totalInput = document.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
     if (totalInput) {
@@ -2315,6 +2358,21 @@ function updateFormFields(jsonData) {
             notesTextarea.value = jsonData.notes;
         }
     }
+    
+    // Add hidden input for salary sheet ID if it exists (for updates)
+    if (jsonData.salary_sheet_id) {
+        let existingInput = document.getElementById('salary_sheet_id');
+        if (existingInput) {
+            existingInput.value = jsonData.salary_sheet_id;
+        } else {
+            let hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+            hiddenInput.id = 'salary_sheet_id';
+            hiddenInput.name = 'salary_sheet_id';
+            hiddenInput.value = jsonData.salary_sheet_id;
+            document.querySelector('form').appendChild(hiddenInput);
+        }
+    }
 }
 
 function updateTableRows(jsonData) {
@@ -2324,7 +2382,7 @@ function updateTableRows(jsonData) {
         console.log('No rows data found in JSON');
         return;
     }
-    
+
     // Clear existing rows
     clearAllRows();
     
@@ -2339,8 +2397,11 @@ function updateTableRows(jsonData) {
         }
     }
     
-    // Update grand total
-    updateGrandTotal();
+    // Update grand total after all rows are processed and calculations are done
+    setTimeout(() => {
+        calculateGrandTotal();
+        console.log('Grand total updated after pulling data');
+    }, 200);
 }
 
 function addPromoterRowFromJson(rowData, index) {
@@ -2402,25 +2463,29 @@ function addPromoterRowFromJson(rowData, index) {
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][basic_salary]" placeholder="Amount" min="0" onchange="calculateRowTotal(${index + 1})" value="${rowData.amount || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][ot_hours]" placeholder="OT Hours" min="0" onchange="calculateRowTotal(${index + 1})" value="0">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][ot_rate]" placeholder="OT Rate" min="0" onchange="calculateRowTotal(${index + 1})" value="0">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][ot_amount]" placeholder="OT Amount" min="0" readonly value="0">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][total_amount]" readonly value="${rowData.net_amount || 0}">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_days]" readonly value="${rowData.attendance_total || 0}">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][amount]" readonly title="Auto-calculated from Attendance Amount" value="${rowData.amount || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][food_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.food_allowance || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][accommodation_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.accommodation_allowance || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][expenses]" onchange="calculateRowNet(${index + 1})" value="${rowData.expenses || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][hold_for_8_weeks]" onchange="calculateRowNet(${index + 1})" value="${rowData.hold_for_8_weeks || 0}">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][net_amount]" readonly value="${rowData.net_amount || 0}">
             </div>
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                 <select class="table-input-small" name="rows[${index + 1}][coordinator_id]" onchange="updateCoordinatorDisplay(${index + 1}, this)">
                     <option value="">Select</option>
                     ${coordinators.map(coordinator => {
                         const selected = coordinator.id == rowData.coordinator_id ? 'selected' : '';
-                        return `<option value="${coordinator.id}" ${selected}>${coordinator.coordinator_name}</option>`;
+                        return `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}" ${selected}>${coordinator.coordinator_id}</option>`;
                     }).join('')}
                 </select>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][current_coordinator]" readonly value="${rowData.current_coordinator || ''}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][coordination_fee]" onchange="calculateRowNet(${index + 1})" value="${rowData.coordination_fee || 0}">
             </div>
+        </td>
+        <td>
+            <button type="button" class="btn-danger" onclick="removeRow(${index + 1})">×</button>
         </td>
     `;
     
@@ -2437,9 +2502,94 @@ function addPromoterRowFromJson(rowData, index) {
         if (coordinatorSelect && coordinatorSelect.value) {
             updateCoordinatorDisplay(index + 1, coordinatorSelect);
         }
+        
+        // Trigger calculations after data is loaded
+        calculateRowTotal(index + 1);
+        calculateAttendanceAmount(index + 1);
     }, 100);
     
     console.log(`Row ${index + 1} added successfully`);
+}
+
+// Pull Data Functions
+function pullExistingData() {
+    const jobSelect = document.getElementById('job_id');
+    const selectedJobId = jobSelect.value;
+    
+    if (!selectedJobId) {
+        showPullDataStatus('Please select a job first.', 'error');
+        return;
+    }
+    
+    console.log('Pulling existing data for job:', selectedJobId);
+    
+    // Show loading state
+    const pullDataBtn = document.getElementById('pullDataBtn');
+    const originalText = pullDataBtn.innerHTML;
+    pullDataBtn.disabled = true;
+    pullDataBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>Pulling...';
+    
+    // First, get the most recent salary sheet for this job
+    fetch(`/admin/salary-sheets/by-job/${selectedJobId}`)
+        .then(response => response.json())
+    .then(data => {
+            console.log('Salary sheets for job:', data);
+            
+            if (data.success && data.salarySheets && data.salarySheets.length > 0) {
+                // Get the most recent salary sheet (first in the array)
+                const mostRecentSheet = data.salarySheets[0];
+                console.log('Most recent salary sheet:', mostRecentSheet);
+                
+                // Now fetch the JSON data for this salary sheet
+                return fetch(`/admin/salary-sheets/${mostRecentSheet.id}/json`);
+        } else {
+                throw new Error('No salary sheets found for this job');
+            }
+        })
+        .then(response => response.json())
+        .then(jsonData => {
+            console.log('Fetched JSON data:', jsonData);
+            
+            // Update form fields
+            updateFormFields(jsonData);
+            
+            // Update table rows
+            updateTableRows(jsonData);
+            
+            showPullDataStatus('Data pulled successfully!', 'success');
+            
+        })
+    .catch(error => {
+            console.error('Error pulling data:', error);
+            showPullDataStatus('No existing data found for this job.', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+            pullDataBtn.disabled = false;
+            pullDataBtn.innerHTML = originalText;
+        });
+}
+
+function showPullDataStatus(message, type) {
+    // Create or update status div
+    let statusDiv = document.getElementById('pullDataStatus');
+    if (!statusDiv) {
+        statusDiv = document.createElement('div');
+        statusDiv.id = 'pullDataStatus';
+        statusDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 1rem; border-radius: 4px; z-index: 9999; max-width: 300px;';
+        document.body.appendChild(statusDiv);
+    }
+    
+    statusDiv.style.display = 'block';
+    statusDiv.textContent = message;
+    statusDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+    statusDiv.style.color = type === 'success' ? '#155724' : '#721c24';
+    statusDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 3000);
 }
 
 // Position Wise Salary Rule Modal Functions

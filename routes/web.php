@@ -60,5 +60,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('admin/position-wise-salary-rules', PositionWiseSalaryRuleController::class)->names('admin.position-wise-salary-rules');
 
     Route::post('admin/salary-sheet-enforce',[SalarySheetController::class,'enforce'])->name('admin.salary.enforce');
+    
+    // API endpoint to generate JSON data for salary sheet
+    Route::get('admin/salary-sheets/{id}/json', [SalarySheetController::class, 'generateJsonData'])->name('admin.salary-sheets.json');
 
 });
