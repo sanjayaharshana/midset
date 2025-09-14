@@ -11,8 +11,9 @@
 @endsection
 
 @section('content')
-
-<div class="card">
+<form action="{{url('admin/salary-sheet-enforce')}}" method="post" id="salarySheetForm">
+    {{csrf_field()}}
+    <div class="card">
         <div class="card-header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Salary Sheet Management</h3>
@@ -58,9 +59,6 @@
             </div>
         </div>
         <div class="card-body">
-            <form id="salarySheetForm" action="{{ route('admin.salary.enforce') }}" method="POST">
-                @csrf
-
                 <!-- Basic Information -->
                 <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem;">
@@ -242,9 +240,9 @@
                     <label style="font-size: 0.75rem; color: #6b7280; font-weight: 600;">NOTES</label>
                     <textarea class="form-control" name="notes" rows="3" placeholder="Additional notes or comments..."></textarea>
                 </div>
-            </form>
         </div>
     </div>
+</form>
 
 <!-- Position Wise Salary Rule Modal -->
 <div id="salaryRuleModal" class="modal" style="display: none;">
@@ -2228,167 +2226,6 @@ function saveSalarySheet() {
     console.log('Form action:', form ? form.action : 'Form not found');
     console.log('Form method:', form ? form.method : 'Form not found');
     console.log('Expected route: admin.salary.enforce');
-    
-    if (!form) {
-        console.error('ERROR: Form with ID "salarySheetForm" not found!');
-        Swal.fire({
-            icon: 'error',
-            title: 'Form Error',
-            text: 'Salary sheet form not found. Please refresh the page and try again.',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
-
-    const rows = document.querySelectorAll('#promoterRows tr');
-    console.log('Form found:', form); // Debug log
-    console.log('Rows found:', rows.length); // Debug log
-
-    // Clear any existing hidden inputs
-    const existingHiddenInputs = form.querySelectorAll('input[name^="rows["]');
-    existingHiddenInputs.forEach(input => input.remove());
-
-    let hasValidRows = false;
-
-    rows.forEach((row, index) => {
-        const promoterId = row.querySelector('select[name*="[promoter_id]"]')?.value;
-        console.log(`Row ${index} promoter ID:`, promoterId); // Debug log
-
-        if (promoterId) {
-            hasValidRows = true;
-
-            // Collect attendance data dynamically
-            const attendanceData = {};
-            console.log('Current attendance dates:', currentAttendanceDates);
-            console.log('Row element:', row);
-            console.log('Row innerHTML:', row.innerHTML.substring(0, 500)); // First 500 chars
-
-            // Always use the fallback method to ensure we get all attendance inputs
-            console.log('Using comprehensive attendance collection method');
-            const attendanceInputs = row.querySelectorAll('input[name*="[attendance]"]');
-            console.log('Found attendance inputs:', attendanceInputs.length);
-
-            attendanceInputs.forEach(input => {
-                const name = input.name;
-                console.log('Processing input:', name, 'value:', input.value);
-
-                // Extract date from name like "rows[0][attendance][2025-01-01]"
-                const dateMatch = name.match(/\[attendance\]\[([^\]]+)\]/);
-                if (dateMatch) {
-                    const date = dateMatch[1];
-                    attendanceData[date] = input.value || 0;
-                    console.log(`Row ${index} attendance for ${date}:`, input.value);
-                }
-            });
-
-            // Also try the currentAttendanceDates method as backup
-            if (currentAttendanceDates && currentAttendanceDates.length > 0) {
-                console.log('Also checking currentAttendanceDates method');
-                currentAttendanceDates.forEach(date => {
-                    const input = row.querySelector(`input[name*="[attendance][${date}]"]`);
-                    if (input && !attendanceData[date]) {
-                        attendanceData[date] = input.value || 0;
-                        console.log(`Row ${index} attendance for ${date} (backup method):`, input.value);
-                    }
-                });
-            }
-            console.log(`Row ${index} attendance data:`, attendanceData);
-
-            // Create hidden inputs for each field
-            const fields = {
-                'promoter_id': promoterId,
-                'location': row.querySelector('input[name*="[location]"]')?.value || '',
-                'attendance_days': row.querySelector('input[name*="[attendance_days]"]')?.value || 0,
-                'basic_salary': row.querySelector('input[name*="[basic_salary]"]')?.value || 0,
-                'ot_hours': row.querySelector('input[name*="[ot_hours]"]')?.value || 0,
-                'ot_rate': row.querySelector('input[name*="[ot_rate]"]')?.value || 0,
-                'ot_amount': row.querySelector('input[name*="[ot_amount]"]')?.value || 0,
-                'total_amount': row.querySelector('input[name*="[total_amount]"]')?.value || 0,
-                'coordinator_id': row.querySelector('select[name*="[coordinator_id]"]')?.value || '',
-            };
-
-            console.log(`Row ${index} fields:`, fields); // Debug log
-
-            // Add each field as hidden input
-            Object.keys(fields).forEach(fieldName => {
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = `rows[${index}][${fieldName}]`;
-                hiddenInput.value = fields[fieldName];
-                form.appendChild(hiddenInput);
-            });
-
-            // Add attendance data as hidden inputs
-            Object.keys(attendanceData).forEach(date => {
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = `rows[${index}][attendance][${date}]`;
-                hiddenInput.value = attendanceData[date];
-                form.appendChild(hiddenInput);
-            });
-        }
-    });
-
-    console.log('Has valid rows:', hasValidRows); // Debug log
-
-    if (!hasValidRows) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'No Promoter Rows',
-            text: 'Please add at least one promoter row.',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
-
-    // Check if required form fields are filled
-    const jobId = form.querySelector('select[name="job_id"]').value;
-    const status = form.querySelector('select[name="status"]').value;
-
-    console.log('Job ID:', jobId); // Debug log
-    console.log('Status:', status); // Debug log
-
-    if (!jobId) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Job Selection Required',
-            text: 'Please select a job before saving.',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
-
-    if (!status) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Status Selection Required',
-            text: 'Please select a status (Draft, Approved, or Paid) before saving.',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
-
-    // Show loading state
-    const saveBtn = document.querySelector('button[onclick="saveSalarySheet()"]');
-    const originalText = saveBtn.innerHTML;
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>Saving...';
-
-    console.log('Submitting form...'); // Debug log
-    console.log('Final form data check:');
-    console.log('- Job ID:', jobId);
-    console.log('- Status:', status);
-    console.log('- Valid rows:', hasValidRows);
-
-    // Debug: Check all form inputs before submission
-    const allInputs = form.querySelectorAll('input[name^="rows["]');
-    console.log('All form inputs before submission:', allInputs.length);
-    allInputs.forEach(input => {
-        console.log(`Input: ${input.name} = ${input.value}`);
-    });
-
-    // Submit form normally (not AJAX)
-    console.log('Submitting form normally to:', form.action);
     form.submit();
 }
 

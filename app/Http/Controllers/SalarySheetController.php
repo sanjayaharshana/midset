@@ -312,7 +312,7 @@ class SalarySheetController extends Controller
 
             // Process each promoter row
             $createdItems = [];
-            foreach ($request->rows as $rowData) {
+            foreach ($request->rows as $rowIndex => $rowData) {
                 if (empty($rowData['promoter_id'])) {
                     continue; // Skip empty rows
                 }
@@ -326,32 +326,33 @@ class SalarySheetController extends Controller
                     continue;
                 }
 
-                // Structure attendance data properly
+                // Structure attendance data properly - handle null values
                 $attendanceData = [];
                 if (isset($rowData['attendance']) && is_array($rowData['attendance'])) {
                     foreach ($rowData['attendance'] as $date => $value) {
-                        $attendanceData[$date] = (int) $value;
+                        // Convert null to 0, and ensure it's an integer
+                        $attendanceData[$date] = $value === null ? 0 : (int) $value;
                     }
                 }
 
                 // Create structured attendance data with promoter information
                 $structuredAttendanceData = [
                     'attendance' => $attendanceData,
-                    'total' => (int) ($rowData['attendance_days'] ?? 0),
-                    'amount' => (float) ($rowData['total_amount'] ?? 0),
+                    'total' => (int) ($rowData['attendance_total'] ?? 0),
+                    'amount' => (float) ($rowData['attendance_amount'] ?? 0),
                     'promoter_id' => $rowData['promoter_id'],
-                    'promoter_name' => $promoter->promoter_name ?? 'Unknown',
-                    'position' => $promoter->position->position_name ?? 'Unknown'
+                    'promoter_name' => $rowData['promoter_name'] ?? 'Unknown',
+                    'position' => $rowData['position'] ?? 'Unknown'
                 ];
 
                 // Create payment data
                 $paymentData = [
-                    'amount' => (float) ($rowData['basic_salary'] ?? 0),
-                    'food_allowance' => 0, // Not in current form
-                    'expenses' => 0, // Not in current form
-                    'accommodation_allowance' => 0, // Not in current form
-                    'hold_for_weeks' => 0, // Not in current form
-                    'net_amount' => (float) ($rowData['total_amount'] ?? 0)
+                    'amount' => (float) ($rowData['amount'] ?? 0),
+                    'food_allowance' => (float) ($rowData['food_allowance'] ?? 0),
+                    'expenses' => (float) ($rowData['expenses'] ?? 0),
+                    'accommodation_allowance' => (float) ($rowData['accommodation_allowance'] ?? 0),
+                    'hold_for_weeks' => (float) ($rowData['hold_for_8_weeks'] ?? 0),
+                    'net_amount' => (float) ($rowData['net_amount'] ?? 0)
                 ];
 
                 // Create coordinator details
@@ -360,8 +361,8 @@ class SalarySheetController extends Controller
                     $coordinator = Coordinator::find($rowData['coordinator_id']);
                     $coordinatorDetails = [
                         'coordinator_id' => $coordinator->coordinator_id ?? $rowData['coordinator_id'],
-                        'current_coordinator' => $coordinator->coordinator_name ?? 'Unknown',
-                        'amount' => 0 // Not in current form
+                        'current_coordinator' => $coordinator->coordinator_name ?? $rowData['current_coordinator'] ?? 'Unknown',
+                        'amount' => (float) ($rowData['coordination_fee'] ?? 0)
                     ];
                 }
 
