@@ -2063,13 +2063,24 @@ function calculateGrandTotal() {
     let totalEarnings = 0;
     let totalDeductions = 0;
 
+    console.log('=== GRAND TOTAL CALCULATION DEBUG ===');
+    console.log('Found rows:', rows.length);
+
     rows.forEach((row, index) => {
-        const amount = parseFloat(row.querySelector('input[name$="[amount]"]')?.value) || 0;
-        const foodAllowance = parseFloat(row.querySelector('input[name$="[food_allowance]"]')?.value) || 0;
-        const accommodationAllowance = parseFloat(row.querySelector('input[name$="[accommodation_allowance]"]')?.value) || 0;
-        const coordinationFee = parseFloat(row.querySelector('input[name$="[coordination_fee]"]')?.value) || 0;
-        const expenses = parseFloat(row.querySelector('input[name$="[expenses]"]')?.value) || 0;
-        const holdFor8Weeks = parseFloat(row.querySelector('input[name$="[hold_for_8_weeks]"]')?.value) || 0;
+        // Try multiple selector approaches to find inputs
+        const amountInput = row.querySelector('input[name*="[amount]"]') || row.querySelector('input[name$="[amount]"]');
+        const foodAllowanceInput = row.querySelector('input[name*="[food_allowance]"]') || row.querySelector('input[name$="[food_allowance]"]');
+        const accommodationAllowanceInput = row.querySelector('input[name*="[accommodation_allowance]"]') || row.querySelector('input[name$="[accommodation_allowance]"]');
+        const coordinationFeeInput = row.querySelector('input[name*="[coordination_fee]"]') || row.querySelector('input[name$="[coordination_fee]"]');
+        const expensesInput = row.querySelector('input[name*="[expenses]"]') || row.querySelector('input[name$="[expenses]"]');
+        const holdFor8WeeksInput = row.querySelector('input[name*="[hold_for_8_weeks]"]') || row.querySelector('input[name$="[hold_for_8_weeks]"]');
+
+        const amount = parseFloat(amountInput?.value) || 0;
+        const foodAllowance = parseFloat(foodAllowanceInput?.value) || 0;
+        const accommodationAllowance = parseFloat(accommodationAllowanceInput?.value) || 0;
+        const coordinationFee = parseFloat(coordinationFeeInput?.value) || 0;
+        const expenses = parseFloat(expensesInput?.value) || 0;
+        const holdFor8Weeks = parseFloat(holdFor8WeeksInput?.value) || 0;
 
         const rowEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
         const rowDeductions = expenses + holdFor8Weeks;
@@ -2077,21 +2088,27 @@ function calculateGrandTotal() {
         totalEarnings += rowEarnings;
         totalDeductions += rowDeductions;
         
-        console.log(`Row ${index + 1} Grand Total Calculation:`, {
+        console.log(`Row ${index + 1} Details:`, {
+            amountInput: amountInput?.name || 'NOT FOUND',
             amount: amount,
+            foodAllowanceInput: foodAllowanceInput?.name || 'NOT FOUND',
             foodAllowance: foodAllowance,
+            accommodationAllowanceInput: accommodationAllowanceInput?.name || 'NOT FOUND',
             accommodationAllowance: accommodationAllowance,
+            coordinationFeeInput: coordinationFeeInput?.name || 'NOT FOUND',
             coordinationFee: coordinationFee,
-            rowEarnings: rowEarnings,
+            expensesInput: expensesInput?.name || 'NOT FOUND',
             expenses: expenses,
+            holdFor8WeeksInput: holdFor8WeeksInput?.name || 'NOT FOUND',
             holdFor8Weeks: holdFor8Weeks,
+            rowEarnings: rowEarnings,
             rowDeductions: rowDeductions
         });
     });
 
     const netSalary = totalEarnings - totalDeductions;
     
-    console.log('Grand Total Calculation:', {
+    console.log('=== FINAL GRAND TOTAL ===', {
         totalEarnings: totalEarnings,
         totalDeductions: totalDeductions,
         netSalary: netSalary
@@ -2258,11 +2275,11 @@ function loadSalarySheetAsRow(sheet, index) {
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][amount]" value="${sheet.basic_salary || 0}" placeholder="Amount" onchange="calculateGrandTotal()">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][food_allowance]" value="${sheet.food_allowance || 0}" placeholder="Food" onchange="calculateGrandTotal()">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][expenses]" value="${sheet.expenses || 0}" placeholder="Expenses" onchange="calculateGrandTotal()">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][accommodation_allowance]" value="${sheet.accommodation_allowance || 0}" placeholder="Accommodation" onchange="calculateGrandTotal()">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][hold_for_8_weeks]" value="${sheet.hold_for_8_weeks || 0}" placeholder="Hold" onchange="calculateGrandTotal()">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][amount]" value="${sheet.basic_salary || 0}" placeholder="Amount" onchange="calculateRowNet(${index})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][food_allowance]" value="${sheet.food_allowance || 0}" placeholder="Food" onchange="calculateRowNet(${index})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][expenses]" value="${sheet.expenses || 0}" placeholder="Expenses" onchange="calculateRowNet(${index})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][accommodation_allowance]" value="${sheet.accommodation_allowance || 0}" placeholder="Accommodation" onchange="calculateRowNet(${index})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][hold_for_8_weeks]" value="${sheet.hold_for_8_weeks || 0}" placeholder="Hold" onchange="calculateRowNet(${index})">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][net_amount]" readonly value="${sheet.net_salary || 0}" title="Auto-calculated: Total - Expenses - Hold">
             </div>
         </td>
@@ -2275,7 +2292,7 @@ function loadSalarySheetAsRow(sheet, index) {
                     ).join('')}
                 </select>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][coordinator_name]" readonly value="${coordinatorName}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][coordination_fee]" value="${sheet.coordination_fee || 0}" placeholder="Fee" onchange="calculateGrandTotal()">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][coordination_fee]" value="${sheet.coordination_fee || 0}" placeholder="Fee" onchange="calculateRowNet(${index})">
             </div>
         </td>
         <td>
@@ -2519,8 +2536,8 @@ function addPromoterRowFromJson(rowData, index) {
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][amount]" readonly title="Auto-calculated from Attendance Amount" value="${rowData.amount || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][food_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.food_allowance || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][accommodation_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.accommodation_allowance || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][expenses]" onchange="calculateRowNet(${index + 1})" value="${rowData.expenses || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][accommodation_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.accommodation_allowance || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][hold_for_8_weeks]" onchange="calculateRowNet(${index + 1})" value="${rowData.hold_for_8_weeks || 0}">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][net_amount]" readonly value="${rowData.net_amount || 0}">
             </div>
@@ -3636,5 +3653,46 @@ document.addEventListener('click', function(e) {
         document.addEventListener('DOMContentLoaded', function() {
             initializeHorizontalScroll();
         });
+
+        // Debug function to manually check expenses calculation
+        function debugExpensesCalculation() {
+            console.log('=== MANUAL EXPENSES DEBUG ===');
+            
+            const rows = document.querySelectorAll('#promoterRows tr');
+            console.log('Total rows found:', rows.length);
+            
+            rows.forEach((row, index) => {
+                console.log(`\n--- Row ${index + 1} ---`);
+                
+                // Check all possible expense selectors
+                const selectors = [
+                    'input[name*="[expenses]"]',
+                    'input[name$="[expenses]"]',
+                    'input[name="rows[' + (index + 1) + '][expenses]"]',
+                    'input[name="rows[' + index + '][expenses]"]'
+                ];
+                
+                selectors.forEach(selector => {
+                    const input = row.querySelector(selector);
+                    if (input) {
+                        console.log(`Found with selector "${selector}":`, {
+                            name: input.name,
+                            value: input.value,
+                            parsed: parseFloat(input.value) || 0
+                        });
+                    }
+                });
+                
+                // Also check all inputs in the row
+                const allInputs = row.querySelectorAll('input');
+                console.log('All inputs in row:', Array.from(allInputs).map(input => ({
+                    name: input.name,
+                    value: input.value
+                })));
+            });
+        }
+
+        // Add this function to window for easy access
+        window.debugExpensesCalculation = debugExpensesCalculation;
 </script>
 @endsection
