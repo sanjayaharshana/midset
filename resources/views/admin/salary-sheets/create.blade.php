@@ -40,6 +40,16 @@
                         </svg>
                         Job Settings
                     </button>
+                    <button type="button" class="btn btn-warning" onclick="openJsonImportModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14,2 14,8 20,8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10,9 9,9 8,9"></polyline>
+                        </svg>
+                        Import JSON Data
+                    </button>
                     <button type="button" class="btn btn-primary" onclick="saveSalarySheet()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -47,13 +57,6 @@
                             <polyline points="7,3 7,8 15,8"></polyline>
                         </svg>
                         Save Salary Sheet
-                    </button>
-                    <button type="button" class="btn btn-warning" onclick="testSave()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 6v6l4 2"></path>
-                        </svg>
-                        Test Save
                     </button>
                 </div>
             </div>
@@ -1285,6 +1288,40 @@
 }
 </style>
 
+<!-- JSON Import Modal -->
+<div id="jsonImportModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3>Import JSON Data</h3>
+            <span class="close" onclick="closeJsonImportModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 1rem;">
+                <label for="jsonDataTextarea" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                    Paste JSON Data:
+                </label>
+                <textarea id="jsonDataTextarea" rows="15" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;" placeholder="Paste your JSON data here..."></textarea>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <button type="button" class="btn btn-primary" onclick="importJsonData()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                    </svg>
+                    Import Data
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeJsonImportModal()" style="margin-left: 0.5rem;">
+                    Cancel
+                </button>
+            </div>
+            <div id="jsonImportStatus" style="padding: 0.75rem; border-radius: 4px; display: none;"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 const promoters = @json($promoters);
 const coordinators = @json($coordinators);
@@ -2166,56 +2203,6 @@ function clearAllRows() {
     rowCounter = 1;
 }
 
-// Test function to debug save issues
-function testSave() {
-    console.log('=== TEST SAVE FUNCTION ===');
-
-    const form = document.getElementById('salarySheetForm');
-    const jobSelect = document.getElementById('job_id');
-    const statusSelect = document.querySelector('select[name="status"]');
-    const rows = document.querySelectorAll('#promoterRows tr');
-
-    console.log('Form element:', form);
-    console.log('Job select value:', jobSelect ? jobSelect.value : 'NOT FOUND');
-    console.log('Status select value:', statusSelect ? statusSelect.value : 'NOT FOUND');
-    console.log('Number of rows:', rows.length);
-
-    // Check status field options
-    if (statusSelect) {
-        console.log('Status field options:');
-        Array.from(statusSelect.options).forEach(option => {
-            console.log(`  - ${option.value}: ${option.text} ${option.selected ? '(SELECTED)' : ''}`);
-        });
-    }
-
-    // Check if form has required fields
-    const requiredFields = ['job_id', 'status'];
-    requiredFields.forEach(fieldName => {
-        const field = form.querySelector(`[name="${fieldName}"]`);
-        console.log(`Field ${fieldName}:`, field ? field.value : 'NOT FOUND');
-    });
-
-    // Check promoter rows
-    rows.forEach((row, index) => {
-        const promoterSelect = row.querySelector('select[name*="[promoter_id]"]');
-        const promoterId = promoterSelect ? promoterSelect.value : 'NOT FOUND';
-        console.log(`Row ${index} promoter ID:`, promoterId);
-
-        if (promoterId && promoterId !== 'NOT FOUND') {
-            console.log(`Row ${index} has valid promoter:`, promoterId);
-        }
-    });
-
-    // Test form submission
-    console.log('Form action:', form.action);
-    console.log('Form method:', form.method);
-
-    // Check if CSRF token exists
-    const csrfToken = form.querySelector('input[name="_token"]');
-    console.log('CSRF token:', csrfToken ? csrfToken.value : 'NOT FOUND');
-
-    console.log('=== END TEST ===');
-}
 
 function saveSalarySheet() {
     console.log('=== SAVE SALARY SHEET FUNCTION CALLED ===');
@@ -2234,6 +2221,226 @@ document.addEventListener('DOMContentLoaded', function() {
     addPromoterRow();
     generateSheetNumber();
 });
+
+// JSON Import Functions
+function openJsonImportModal() {
+    document.getElementById('jsonImportModal').style.display = 'block';
+    document.getElementById('jsonDataTextarea').focus();
+}
+
+function closeJsonImportModal() {
+    document.getElementById('jsonImportModal').style.display = 'none';
+    document.getElementById('jsonDataTextarea').value = '';
+    document.getElementById('jsonImportStatus').style.display = 'none';
+}
+
+function importJsonData() {
+    const jsonText = document.getElementById('jsonDataTextarea').value.trim();
+    
+    if (!jsonText) {
+        showJsonStatus('Please paste JSON data first.', 'error');
+        return;
+    }
+    
+    try {
+        const jsonData = JSON.parse(jsonText);
+        console.log('Parsed JSON data:', jsonData);
+        
+        // Validate required fields
+        if (!jsonData.job_id || !jsonData.status) {
+            showJsonStatus('JSON must contain job_id and status fields.', 'error');
+            return;
+        }
+        
+        // Update form fields
+        updateFormFields(jsonData);
+        
+        // Update table rows
+        updateTableRows(jsonData);
+        
+        showJsonStatus('JSON data imported successfully!', 'success');
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+            closeJsonImportModal();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('JSON parsing error:', error);
+        showJsonStatus('Invalid JSON format. Please check your data.', 'error');
+    }
+}
+
+function showJsonStatus(message, type) {
+    const statusDiv = document.getElementById('jsonImportStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.textContent = message;
+    statusDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+    statusDiv.style.color = type === 'success' ? '#155724' : '#721c24';
+    statusDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+}
+
+function updateFormFields(jsonData) {
+    console.log('Updating form fields with:', jsonData);
+    
+    // Update main form fields
+    if (jsonData.sheet_number) {
+        document.getElementById('sheet_number').value = jsonData.sheet_number;
+    }
+    
+    if (jsonData.job_id) {
+        const jobSelect = document.getElementById('job_id');
+        jobSelect.value = jsonData.job_id;
+        // Trigger job change to update attendance dates
+        updateAttendanceDates();
+    }
+    
+    if (jsonData.status) {
+        const statusSelect = document.querySelector('select[name="status"]');
+        if (statusSelect) {
+            statusSelect.value = jsonData.status;
+        }
+    }
+    
+    if (jsonData.location) {
+        const locationInput = document.querySelector('input[name="location"]');
+        if (locationInput) {
+            locationInput.value = jsonData.location;
+        }
+    }
+    
+    if (jsonData.notes) {
+        const notesTextarea = document.querySelector('textarea[name="notes"]');
+        if (notesTextarea) {
+            notesTextarea.value = jsonData.notes;
+        }
+    }
+}
+
+function updateTableRows(jsonData) {
+    console.log('Updating table rows with:', jsonData.rows);
+    
+    if (!jsonData.rows || typeof jsonData.rows !== 'object') {
+        console.log('No rows data found in JSON');
+        return;
+    }
+    
+    // Clear existing rows
+    clearAllRows();
+    
+    // Add rows based on JSON data
+    let rowIndex = 0;
+    for (const [rowKey, rowData] of Object.entries(jsonData.rows)) {
+        console.log(`Processing row ${rowKey}:`, rowData);
+        
+        if (rowData.promoter_id) {
+            addPromoterRowFromJson(rowData, rowIndex);
+            rowIndex++;
+        }
+    }
+    
+    // Update grand total
+    updateGrandTotal();
+}
+
+function addPromoterRowFromJson(rowData, index) {
+    console.log(`Adding promoter row ${index} with data:`, rowData);
+    
+    const tbody = document.getElementById('promoterRows');
+    const row = document.createElement('tr');
+    
+    // Generate attendance inputs based on JSON dates
+    let attendanceInputs = '';
+    const attendanceDates = Object.keys(rowData.attendance || {});
+    
+    if (attendanceDates.length > 0) {
+        // Use dates from JSON
+        attendanceInputs = attendanceDates.map(date =>
+            `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1" value="${rowData.attendance[date] || 0}">`
+        ).join('');
+    } else {
+        // Fallback: create 6 default attendance inputs
+        attendanceInputs = Array.from({length: 6}, (_, i) =>
+            `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1">`
+        ).join('');
+    }
+    
+    row.innerHTML = `
+        <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+        <td>
+            <input type="text" class="table-input" name="rows[${index + 1}][location]" placeholder="Location" value="${rowData.location || ''}">
+        </td>
+        <td>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <select class="table-input-small" name="rows[${index + 1}][promoter_id]" onchange="updatePromoterDetails(${index + 1}, this)">
+                    <option value="">Select</option>
+                    ${promoters.map(promoter => {
+                        const positionName = promoter.position ? promoter.position.position_name : 'No Position';
+                        const selected = promoter.id == rowData.promoter_id ? 'selected' : '';
+                        return `<option value="${promoter.id}"
+                                data-name="${promoter.promoter_name}"
+                                data-position="${positionName}"
+                                data-phone="${promoter.phone_no || ''}"
+                                data-id-card="${promoter.identity_card_no || ''}"
+                                data-bank="${promoter.bank_name || ''}"
+                                data-account="${promoter.bank_account_number || ''}"
+                                data-status="${promoter.status || 'inactive'}"
+                                data-position-id="${promoter.position_id || ''}"
+                                ${selected}>${promoter.promoter_id}</option>`;
+                    }).join('')}
+                </select>
+                <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${index + 1}][promoter_name]" readonly data-tooltip="" value="${rowData.promoter_name || ''}">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][position]" readonly value="${rowData.position || ''}">
+            </div>
+        </td>
+        <td id="attendanceCell-${index + 1}" style="display: table-cell; width: ${(attendanceDates.length || 6) * 80 + 160}px;">
+            <div style="display: grid; grid-template-columns: repeat(${attendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(attendanceDates.length || 6) * 80 + 160}px;">
+                ${attendanceInputs}
+                <input type="number" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_total]" readonly value="${rowData.attendance_total || 0}">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days" value="${rowData.attendance_amount || 0}">
+            </div>
+        </td>
+        <td>
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][basic_salary]" placeholder="Amount" min="0" onchange="calculateRowTotal(${index + 1})" value="${rowData.amount || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][ot_hours]" placeholder="OT Hours" min="0" onchange="calculateRowTotal(${index + 1})" value="0">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][ot_rate]" placeholder="OT Rate" min="0" onchange="calculateRowTotal(${index + 1})" value="0">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][ot_amount]" placeholder="OT Amount" min="0" readonly value="0">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][total_amount]" readonly value="${rowData.net_amount || 0}">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_days]" readonly value="${rowData.attendance_total || 0}">
+            </div>
+        </td>
+        <td>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                <select class="table-input-small" name="rows[${index + 1}][coordinator_id]" onchange="updateCoordinatorDisplay(${index + 1}, this)">
+                    <option value="">Select</option>
+                    ${coordinators.map(coordinator => {
+                        const selected = coordinator.id == rowData.coordinator_id ? 'selected' : '';
+                        return `<option value="${coordinator.id}" ${selected}>${coordinator.coordinator_name}</option>`;
+                    }).join('')}
+                </select>
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][current_coordinator]" readonly value="${rowData.current_coordinator || ''}">
+            </div>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // Update promoter details after adding the row
+    setTimeout(() => {
+        const promoterSelect = row.querySelector(`select[name="rows[${index + 1}][promoter_id]"]`);
+        if (promoterSelect && promoterSelect.value) {
+            updatePromoterDetails(index + 1, promoterSelect);
+        }
+        
+        const coordinatorSelect = row.querySelector(`select[name="rows[${index + 1}][coordinator_id]"]`);
+        if (coordinatorSelect && coordinatorSelect.value) {
+            updateCoordinatorDisplay(index + 1, coordinatorSelect);
+        }
+    }, 100);
+    
+    console.log(`Row ${index + 1} added successfully`);
+}
 
 // Position Wise Salary Rule Modal Functions
 let salaryRuleCounter = 0;
