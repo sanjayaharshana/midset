@@ -40,7 +40,7 @@
                         </svg>
                         Job Settings
                     </button>
-                    <button type="button" class="btn btn-warning" onclick="openJsonImportModal()">
+                    <button type="button" class="btn btn-warning"  onclick="pullExistingData()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14,2 14,8 20,8"></polyline>
@@ -48,7 +48,7 @@
                             <line x1="16" y1="17" x2="8" y2="17"></line>
                             <polyline points="10,9 9,9 8,9"></polyline>
                         </svg>
-                        Import JSON Data
+                        Pull Data
                     </button>
                     <button type="button" class="btn btn-primary" onclick="saveSalarySheet()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -78,7 +78,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
+                        <div style="display: none">
                             <label style="font-size: 0.75rem; color: #6b7280; font-weight: 600;">PULL DATA</label>
                             <button type="button" class="btn btn-success btn-sm" id="pullDataBtn" onclick="pullExistingData()" disabled style="width: 100%;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
@@ -1354,7 +1354,7 @@ function addPromoterRow() {
 
     const tbody = document.getElementById('promoterRows');
     const row = document.createElement('tr');
-    
+
     // Calculate the next row number based on existing rows
     const existingRows = tbody.querySelectorAll('tr');
     const nextRowNumber = existingRows.length + 1;
@@ -1438,10 +1438,10 @@ function addPromoterRow() {
     `;
 
     tbody.appendChild(row);
-    
+
     // Update the global rowCounter to match the actual number of rows
     rowCounter = nextRowNumber;
-    
+
     // Trigger initial calculations for the new row
     setTimeout(() => {
         console.log(`Triggering calculations for new row ${nextRowNumber}`);
@@ -1450,7 +1450,7 @@ function addPromoterRow() {
         calculateRowNet(nextRowNumber);
         calculateGrandTotal();
     }, 100);
-    
+
     console.log(`Added promoter row ${nextRowNumber} successfully`);
 }
 
@@ -1712,7 +1712,7 @@ function updateAttendanceDates() {
         // Disable buttons
         addPromoterBtn.disabled = true;
         salaryRuleBtn.disabled = true;
-        
+
         // Disable Pull Data button when no job is selected
         const pullDataBtn = document.getElementById('pullDataBtn');
         if (pullDataBtn) {
@@ -1925,7 +1925,7 @@ function getPositionSalary(positionId) {
 
 function calculateRowTotal(rowNum) {
     let total = 0;
-    
+
     // Method 1: Use currentAttendanceDates if available
     if (currentAttendanceDates && currentAttendanceDates.length > 0) {
     currentAttendanceDates.forEach(date => {
@@ -1935,7 +1935,7 @@ function calculateRowTotal(rowNum) {
         }
     });
     }
-    
+
     // Method 2: Fallback - find all attendance inputs in the row
     if (total === 0) {
         const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][promoter_id]"])`);
@@ -2040,7 +2040,7 @@ function calculateRowNet(rowNum) {
     const totalEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
     const totalDeductions = expenses + holdFor8Weeks;
     const netAmount = totalEarnings - totalDeductions;
-    
+
     console.log(`Row ${rowNum} Net Calculation:`, {
         amount: amount,
         foodAllowance: foodAllowance,
@@ -2052,7 +2052,7 @@ function calculateRowNet(rowNum) {
         totalDeductions: totalDeductions,
         netAmount: netAmount
     });
-    
+
     row.querySelector(`input[name="rows[${rowNum}][net_amount]"]`).value = netAmount.toFixed(2);
 
     calculateGrandTotal();
@@ -2084,10 +2084,10 @@ function calculateGrandTotal() {
 
         const rowEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
         const rowDeductions = expenses + holdFor8Weeks;
-        
+
         totalEarnings += rowEarnings;
         totalDeductions += rowDeductions;
-        
+
         console.log(`Row ${index + 1} Details:`, {
             amountInput: amountInput?.name || 'NOT FOUND',
             amount: amount,
@@ -2107,7 +2107,7 @@ function calculateGrandTotal() {
     });
 
     const netSalary = totalEarnings - totalDeductions;
-    
+
     console.log('=== FINAL GRAND TOTAL ===', {
         totalEarnings: totalEarnings,
         totalDeductions: totalDeductions,
@@ -2349,35 +2349,35 @@ function closeJsonImportModal() {
 
 function importJsonData() {
     const jsonText = document.getElementById('jsonDataTextarea').value.trim();
-    
+
     if (!jsonText) {
         showJsonStatus('Please paste JSON data first.', 'error');
         return;
     }
-    
+
     try {
         const jsonData = JSON.parse(jsonText);
         console.log('Parsed JSON data:', jsonData);
-        
+
         // Validate required fields
         if (!jsonData.job_id || !jsonData.status) {
             showJsonStatus('JSON must contain job_id and status fields.', 'error');
             return;
         }
-        
+
         // Update form fields
         updateFormFields(jsonData);
-        
+
         // Update table rows
         updateTableRows(jsonData);
-        
+
         showJsonStatus('JSON data imported successfully!', 'success');
-        
+
         // Close modal after a short delay
         setTimeout(() => {
             closeJsonImportModal();
         }, 1500);
-        
+
     } catch (error) {
         console.error('JSON parsing error:', error);
         showJsonStatus('Invalid JSON format. Please check your data.', 'error');
@@ -2395,40 +2395,40 @@ function showJsonStatus(message, type) {
 
 function updateFormFields(jsonData) {
     console.log('Updating form fields with:', jsonData);
-    
+
     // Update main form fields
     if (jsonData.sheet_number) {
         document.getElementById('sheet_number').value = jsonData.sheet_number;
     }
-    
+
     if (jsonData.job_id) {
         const jobSelect = document.getElementById('job_id');
         jobSelect.value = jsonData.job_id;
         // Trigger job change to update attendance dates
         updateAttendanceDates();
     }
-    
+
     if (jsonData.status) {
         const statusSelect = document.querySelector('select[name="status"]');
         if (statusSelect) {
             statusSelect.value = jsonData.status;
         }
     }
-    
+
     if (jsonData.location) {
         const locationInput = document.querySelector('input[name="location"]');
         if (locationInput) {
             locationInput.value = jsonData.location;
         }
     }
-    
+
     if (jsonData.notes) {
         const notesTextarea = document.querySelector('textarea[name="notes"]');
         if (notesTextarea) {
             notesTextarea.value = jsonData.notes;
         }
     }
-    
+
     // Add hidden input for salary sheet ID if it exists (for updates)
     if (jsonData.salary_sheet_id) {
         let existingInput = document.getElementById('salary_sheet_id');
@@ -2447,7 +2447,7 @@ function updateFormFields(jsonData) {
 
 function updateTableRows(jsonData) {
     console.log('Updating table rows with:', jsonData.rows);
-    
+
     if (!jsonData.rows || typeof jsonData.rows !== 'object') {
         console.log('No rows data found in JSON');
         return;
@@ -2455,18 +2455,18 @@ function updateTableRows(jsonData) {
 
     // Clear existing rows
     clearAllRows();
-    
+
     // Add rows based on JSON data
     let rowIndex = 0;
     for (const [rowKey, rowData] of Object.entries(jsonData.rows)) {
         console.log(`Processing row ${rowKey}:`, rowData);
-        
+
         if (rowData.promoter_id) {
             addPromoterRowFromJson(rowData, rowIndex);
             rowIndex++;
         }
     }
-    
+
     // Update grand total after all rows are processed and calculations are done
     setTimeout(() => {
         console.log('Updating grand total after all rows processed...');
@@ -2477,14 +2477,14 @@ function updateTableRows(jsonData) {
 
 function addPromoterRowFromJson(rowData, index) {
     console.log(`Adding promoter row ${index} with data:`, rowData);
-    
+
     const tbody = document.getElementById('promoterRows');
     const row = document.createElement('tr');
-    
+
     // Generate attendance inputs based on JSON dates
     let attendanceInputs = '';
     const attendanceDates = Object.keys(rowData.attendance || {});
-    
+
     if (attendanceDates.length > 0) {
         // Use dates from JSON
         attendanceInputs = attendanceDates.map(date =>
@@ -2496,7 +2496,7 @@ function addPromoterRowFromJson(rowData, index) {
             `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1">`
         ).join('');
     }
-    
+
     row.innerHTML = `
         <td style="text-align: center; font-weight: bold;">${index + 1}</td>
         <td>
@@ -2560,31 +2560,31 @@ function addPromoterRowFromJson(rowData, index) {
             <button type="button" class="btn-danger" onclick="removeRow(${index + 1})">×</button>
         </td>
     `;
-    
+
     tbody.appendChild(row);
-    
+
     // Update promoter details after adding the row
     setTimeout(() => {
         const promoterSelect = row.querySelector(`select[name="rows[${index + 1}][promoter_id]"]`);
         if (promoterSelect && promoterSelect.value) {
             updatePromoterDetails(index + 1, promoterSelect);
         }
-        
+
         const coordinatorSelect = row.querySelector(`select[name="rows[${index + 1}][coordinator_id]"]`);
         if (coordinatorSelect && coordinatorSelect.value) {
             updateCoordinatorDisplay(index + 1, coordinatorSelect);
         }
-        
+
         // Trigger all calculations after data is loaded
         calculateRowTotal(index + 1);
-        
+
         // Get present days for attendance amount calculation
         const totalInput = row.querySelector(`input[name="rows[${index + 1}][attendance_total]"]`);
         const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
         calculateAttendanceAmount(index + 1, presentDays);
-        
+
         calculateRowNet(index + 1);
-        
+
         // Ensure amount field is set from attendance amount
         const attendanceAmountInput = row.querySelector(`input[name="rows[${index + 1}][attendance_amount]"]`);
         const amountInput = row.querySelector(`input[name="rows[${index + 1}][amount]"]`);
@@ -2592,7 +2592,7 @@ function addPromoterRowFromJson(rowData, index) {
             amountInput.value = attendanceAmountInput.value;
         }
     }, 100);
-    
+
     console.log(`Row ${index + 1} added successfully`);
 }
 
@@ -2600,31 +2600,31 @@ function addPromoterRowFromJson(rowData, index) {
 function pullExistingData() {
     const jobSelect = document.getElementById('job_id');
     const selectedJobId = jobSelect.value;
-    
+
     if (!selectedJobId) {
         showPullDataStatus('Please select a job first.', 'error');
         return;
     }
-    
+
     console.log('Pulling existing data for job:', selectedJobId);
-    
+
     // Show loading state
     const pullDataBtn = document.getElementById('pullDataBtn');
     const originalText = pullDataBtn.innerHTML;
     pullDataBtn.disabled = true;
     pullDataBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>Pulling...';
-    
+
     // First, get the most recent salary sheet for this job
     fetch(`/admin/salary-sheets/by-job/${selectedJobId}`)
         .then(response => response.json())
     .then(data => {
             console.log('Salary sheets for job:', data);
-            
+
             if (data.success && data.salarySheets && data.salarySheets.length > 0) {
                 // Get the most recent salary sheet (first in the array)
                 const mostRecentSheet = data.salarySheets[0];
                 console.log('Most recent salary sheet:', mostRecentSheet);
-                
+
                 // Now fetch the JSON data for this salary sheet
                 return fetch(`/admin/salary-sheets/${mostRecentSheet.id}/json`);
         } else {
@@ -2634,34 +2634,34 @@ function pullExistingData() {
         .then(response => response.json())
         .then(jsonData => {
             console.log('Fetched JSON data:', jsonData);
-            
+
             // Update form fields
             updateFormFields(jsonData);
-            
+
             // Update table rows
             updateTableRows(jsonData);
-            
+
             // Trigger all calculations after data is loaded
             setTimeout(() => {
                 console.log('Triggering all calculations after pull data...');
-                
+
                 // Calculate attendance totals and amounts for each row
                 const rows = document.querySelectorAll('#promoterRows tr');
                 rows.forEach((row, index) => {
                     const rowNum = index + 1;
                     console.log(`Calculating for row ${rowNum}`);
-                    
+
                     // Trigger attendance calculations
                     calculateRowTotal(rowNum);
-                    
+
                     // Get present days for attendance amount calculation
                     const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
                     const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
                     calculateAttendanceAmount(rowNum, presentDays);
-                    
+
                     // Trigger net amount calculations
                     calculateRowNet(rowNum);
-                    
+
                     // Ensure amount field is set from attendance amount
                     const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
                     const amountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
@@ -2669,15 +2669,15 @@ function pullExistingData() {
                         amountInput.value = attendanceAmountInput.value;
                     }
                 });
-                
+
                 // Update grand total
                 calculateGrandTotal();
-                
+
                 console.log('All calculations completed after pull data');
             }, 300);
-            
+
             showPullDataStatus('Data pulled successfully!', 'success');
-            
+
         })
     .catch(error => {
             console.error('Error pulling data:', error);
@@ -2699,13 +2699,13 @@ function showPullDataStatus(message, type) {
         statusDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 1rem; border-radius: 4px; z-index: 9999; max-width: 300px;';
         document.body.appendChild(statusDiv);
     }
-    
+
     statusDiv.style.display = 'block';
     statusDiv.textContent = message;
     statusDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
     statusDiv.style.color = type === 'success' ? '#155724' : '#721c24';
     statusDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
-    
+
     // Auto-hide after 3 seconds
     setTimeout(() => {
         statusDiv.style.display = 'none';
@@ -3657,13 +3657,13 @@ document.addEventListener('click', function(e) {
         // Debug function to manually check expenses calculation
         function debugExpensesCalculation() {
             console.log('=== MANUAL EXPENSES DEBUG ===');
-            
+
             const rows = document.querySelectorAll('#promoterRows tr');
             console.log('Total rows found:', rows.length);
-            
+
             rows.forEach((row, index) => {
                 console.log(`\n--- Row ${index + 1} ---`);
-                
+
                 // Check all possible expense selectors
                 const selectors = [
                     'input[name*="[expenses]"]',
@@ -3671,7 +3671,7 @@ document.addEventListener('click', function(e) {
                     'input[name="rows[' + (index + 1) + '][expenses]"]',
                     'input[name="rows[' + index + '][expenses]"]'
                 ];
-                
+
                 selectors.forEach(selector => {
                     const input = row.querySelector(selector);
                     if (input) {
@@ -3682,7 +3682,7 @@ document.addEventListener('click', function(e) {
                         });
                     }
                 });
-                
+
                 // Also check all inputs in the row
                 const allInputs = row.querySelectorAll('input');
                 console.log('All inputs in row:', Array.from(allInputs).map(input => ({
