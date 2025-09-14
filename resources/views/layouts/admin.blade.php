@@ -447,6 +447,152 @@
                 display: block;
             }
         }
+
+        /* Form Controls */
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #374151;
+            background-color: #ffffff;
+            background-clip: padding-box;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            color: #374151;
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: #9ca3af;
+            opacity: 1;
+        }
+
+        .form-control:disabled,
+        .form-control[readonly] {
+            background-color: #f9fafb;
+            opacity: 1;
+        }
+
+        .form-control.is-invalid {
+            border-color: #ef4444;
+        }
+
+        .form-control.is-invalid:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .form-control.is-valid {
+            border-color: #10b981;
+        }
+
+        .form-control.is-valid:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        /* Button Styles */
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+            border: 1px solid #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            border-color: #4b5563;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: 1px solid #3b82f6;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: white;
+        }
+
+        /* Form Validation */
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #ef4444;
+        }
+
+        .valid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #10b981;
+        }
+
+        /* Form Groups */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        /* Select Styles */
+        select.form-control {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        /* Textarea Styles */
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Input Number Styles */
+        input[type="number"].form-control {
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"].form-control::-webkit-outer-spin-button,
+        input[type="number"].form-control::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Focus States */
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Responsive Form Controls */
+        @media (max-width: 768px) {
+            .form-control {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
     </style>
 </head>
 <body>

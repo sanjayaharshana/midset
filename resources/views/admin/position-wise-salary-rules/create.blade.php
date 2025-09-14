@@ -29,8 +29,8 @@
             @csrf
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                <div>
-                    <label for="position_id" style="font-size: 0.875rem; color: #374151; font-weight: 600; margin-bottom: 0.5rem; display: block;">Position</label>
+                <div class="form-group">
+                    <label for="position_id" class="form-label">Position</label>
                     <select class="form-control @error('position_id') is-invalid @enderror" id="position_id" name="position_id" required>
                         <option value="">Select Position</option>
                         @foreach($positions as $position)
@@ -44,8 +44,8 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="job_id" style="font-size: 0.875rem; color: #374151; font-weight: 600; margin-bottom: 0.5rem; display: block;">Job (Optional)</label>
+                <div class="form-group">
+                    <label for="job_id" class="form-label">Job (Optional)</label>
                     <select class="form-control @error('job_id') is-invalid @enderror" id="job_id" name="job_id">
                         <option value="">Select Job (Optional)</option>
                         @foreach($jobs as $job)
@@ -60,24 +60,24 @@
                 </div>
             </div>
 
-            <div style="margin-top: 1.5rem;">
-                <label for="amount" style="font-size: 0.875rem; color: #374151; font-weight: 600; margin-bottom: 0.5rem; display: block;">Amount (Rs.)</label>
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label for="amount" class="form-label">Amount (Rs.)</label>
                 <input type="number" step="0.01" min="0" class="form-control @error('amount') is-invalid @enderror" id="amount" name="amount" value="{{ old('amount') }}" placeholder="Enter amount" required>
                 @error('amount')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div style="margin-top: 1.5rem;">
-                <label for="description" style="font-size: 0.875rem; color: #374151; font-weight: 600; margin-bottom: 0.5rem; display: block;">Description (Optional)</label>
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label for="description" class="form-label">Description (Optional)</label>
                 <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3" placeholder="Enter description...">{{ old('description') }}</textarea>
                 @error('description')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div style="margin-top: 1.5rem;">
-                <label for="status" style="font-size: 0.875rem; color: #374151; font-weight: 600; margin-bottom: 0.5rem; display: block;">Status</label>
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label for="status" class="form-label">Status</label>
                 <select class="form-control @error('status') is-invalid @enderror" id="status" name="status" required>
                     <option value="">Select Status</option>
                     <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>

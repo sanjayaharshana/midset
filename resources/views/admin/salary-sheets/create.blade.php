@@ -1441,6 +1441,9 @@ function addPromoterRow() {
 
     // Update the global rowCounter to match the actual number of rows
     rowCounter = nextRowNumber;
+    
+    // Update promoter dropdowns to hide already selected promoters
+    updatePromoterDropdowns();
 
     // Trigger initial calculations for the new row
     setTimeout(() => {
@@ -1541,7 +1544,77 @@ function updatePromoterTooltipFromOption(inputElement, optionElement) {
     inputElement.setAttribute('data-tooltip', tooltipContent);
 }
 
+// Promoter Management Functions
+function getSelectedPromoterIds() {
+    const selectedIds = [];
+    const promoterSelects = document.querySelectorAll('select[name*="[promoter_id]"]');
+    
+    promoterSelects.forEach(select => {
+        if (select.value && select.value !== '') {
+            selectedIds.push(select.value);
+        }
+    });
+    
+    return selectedIds;
+}
+
+function updatePromoterDropdowns() {
+    const selectedIds = getSelectedPromoterIds();
+    const promoterSelects = document.querySelectorAll('select[name*="[promoter_id]"]');
+    
+    promoterSelects.forEach(select => {
+        const currentValue = select.value;
+        const options = select.querySelectorAll('option');
+        
+        options.forEach(option => {
+            if (option.value === '') {
+                // Always show the "Select" option
+                option.style.display = 'block';
+            } else if (option.value === currentValue) {
+                // Always show the currently selected option
+                option.style.display = 'block';
+            } else if (selectedIds.includes(option.value)) {
+                // Hide options that are selected in other rows
+                option.style.display = 'none';
+            } else {
+                // Show available options
+                option.style.display = 'block';
+            }
+        });
+    });
+}
+
+function validatePromoterSelection(selectElement) {
+    const selectedValue = selectElement.value;
+    if (!selectedValue) return true; // Allow empty selection
+    
+    const selectedIds = getSelectedPromoterIds();
+    const duplicateCount = selectedIds.filter(id => id === selectedValue).length;
+    
+    if (duplicateCount > 1) {
+        // Reset to empty selection
+        selectElement.value = '';
+        
+        // Show error message
+        Swal.fire({
+            icon: 'error',
+            title: 'Duplicate Promoter',
+            text: 'This promoter is already selected in another row. Please choose a different promoter.',
+            confirmButtonText: 'OK'
+        });
+        
+        return false;
+    }
+    
+    return true;
+}
+
 function updatePromoterDetails(rowNum, selectElement) {
+    // Validate promoter selection first
+    if (!validatePromoterSelection(selectElement)) {
+        return; // Stop processing if validation fails
+    }
+    
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const row = selectElement.closest('tr');
 
@@ -1559,6 +1632,9 @@ function updatePromoterDetails(rowNum, selectElement) {
         const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
         const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
         calculateAttendanceAmount(rowNum, presentDays);
+        
+        // Update all promoter dropdowns to hide selected promoters
+        updatePromoterDropdowns();
     } else {
         const promoterNameInput = row.querySelector('input[name="rows[' + rowNum + '][promoter_name]"]');
         const positionInput = row.querySelector('input[name="rows[' + rowNum + '][position]"]');
@@ -1574,6 +1650,9 @@ function updatePromoterDetails(rowNum, selectElement) {
         if (attendanceAmountInput) {
             attendanceAmountInput.value = '0.00';
         }
+        
+        // Update all promoter dropdowns when selection is cleared
+        updatePromoterDropdowns();
     }
 }
 
@@ -2143,6 +2222,9 @@ function removeRow(rowNum) {
             if (row) {
                 row.remove();
                 calculateGrandTotal();
+                
+                // Update promoter dropdowns after removing a row
+                updatePromoterDropdowns();
 
                 // Show success message
                 Swal.fire({
@@ -2471,6 +2553,7 @@ function updateTableRows(jsonData) {
     setTimeout(() => {
         console.log('Updating grand total after all rows processed...');
         calculateGrandTotal();
+        updatePromoterDropdowns(); // Update dropdowns after all rows are added
         console.log('Grand total updated after pulling data');
     }, 200);
 }
@@ -2593,6 +2676,9 @@ function addPromoterRowFromJson(rowData, index) {
         }
     }, 100);
 
+    // Update promoter dropdowns to hide already selected promoters
+    updatePromoterDropdowns();
+    
     console.log(`Row ${index + 1} added successfully`);
 }
 
