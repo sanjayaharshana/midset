@@ -1633,6 +1633,9 @@ function updatePromoterDetails(rowNum, selectElement) {
         const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
         calculateAttendanceAmount(rowNum, presentDays);
         
+        // Apply job settings to this row when promoter changes
+        applyJobSettingsToRow(rowNum);
+        
         // Update all promoter dropdowns to hide selected promoters
         updatePromoterDropdowns();
     } else {
@@ -1662,8 +1665,29 @@ function updateCoordinatorDisplay(rowNum, selectElement) {
 
     if (selectedOption && selectedOption.dataset.name) {
         row.querySelector('input[name="rows[' + rowNum + '][current_coordinator]"]').value = selectedOption.dataset.name;
+        
+        // Calculate coordinator fee based on present days
+        calculateCoordinatorFee(rowNum);
+        
+        // Apply job settings to this row when coordinator changes
+        applyJobSettingsToRow(rowNum);
+        
+        // Trigger net calculation since coordinator fee changed
+        calculateRowNet(rowNum);
     } else {
         row.querySelector('input[name="rows[' + rowNum + '][current_coordinator]"]').value = '';
+        
+        // Clear coordinator fee when no coordinator selected
+        const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
+        if (coordinationFeeInput) {
+            coordinationFeeInput.value = '0.00';
+        }
+        
+        // Apply job settings to this row when coordinator changes
+        applyJobSettingsToRow(rowNum);
+        
+        // Trigger net calculation
+        calculateRowNet(rowNum);
     }
 }
 
@@ -1752,6 +1776,13 @@ function updateAttendanceDates() {
 
             // Load position salary rules for the selected job
             loadPositionSalaryRules();
+
+            // Apply job settings to all existing rows when job is selected
+            const rows = document.querySelectorAll('#promoterRows tr');
+            rows.forEach((row, index) => {
+                const rowNum = index + 1;
+                applyJobSettingsToRow(rowNum);
+            });
 
             // Enable Pull Data button when job is selected
             const pullDataBtn = document.getElementById('pullDataBtn');
@@ -2038,6 +2069,9 @@ function calculateRowTotal(rowNum) {
     // Calculate attendance amount based on position salary
     calculateAttendanceAmount(rowNum, total);
 
+    // Apply job settings to this row when attendance changes
+    applyJobSettingsToRow(rowNum);
+
     calculateRowNet(rowNum);
 }
 
@@ -2051,8 +2085,10 @@ function calculateCoordinatorFee(rowNum) {
     const attendanceTotalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
     const presentDays = parseFloat(attendanceTotalInput?.value) || 0;
     
-    // Get default coordinator fee from job settings
-    const defaultCoordinatorFee = parseFloat(document.getElementById('defaultCoordinatorFee')?.value) || 0;
+    // Get default coordinator fee from selected job data
+    const selectedJobId = document.getElementById('job_id').value;
+    const selectedJob = jobs.find(job => job.id == selectedJobId);
+    const defaultCoordinatorFee = selectedJob ? parseFloat(selectedJob.default_coordinator_fee) || 0 : 0;
     
     // Calculate coordinator fee: default_coordinator_fee * present_days
     const calculatedCoordinatorFee = defaultCoordinatorFee * presentDays;
@@ -2061,6 +2097,12 @@ function calculateCoordinatorFee(rowNum) {
     const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
     if (coordinationFeeInput) {
         coordinationFeeInput.value = calculatedCoordinatorFee.toFixed(2);
+        
+        console.log(`Coordinator Fee Calculation for Row ${rowNum}:`, {
+            presentDays: presentDays,
+            defaultCoordinatorFee: defaultCoordinatorFee,
+            calculatedCoordinatorFee: calculatedCoordinatorFee
+        });
         
         // Trigger row net calculation since coordinator fee changed
         calculateRowNet(rowNum);
@@ -2158,8 +2200,8 @@ function calculateRowNet(rowNum) {
     const holdFor8Weeks = parseFloat(row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`).value) || 0;
     const coordinationFee = parseFloat(row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`).value) || 0;
 
-    // Calculate net amount: Earnings - Deductions
-    const totalEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
+    // Calculate net amount: Earnings - Deductions (excluding coordination fee)
+    const totalEarnings = amount + foodAllowance + accommodationAllowance;
     const totalDeductions = expenses + holdFor8Weeks;
     const netAmount = totalEarnings - totalDeductions;
 
@@ -2167,12 +2209,12 @@ function calculateRowNet(rowNum) {
         amount: amount,
         foodAllowance: foodAllowance,
         accommodationAllowance: accommodationAllowance,
-        coordinationFee: coordinationFee,
         totalEarnings: totalEarnings,
         expenses: expenses,
         holdFor8Weeks: holdFor8Weeks,
         totalDeductions: totalDeductions,
-        netAmount: netAmount
+        netAmount: netAmount,
+        coordinationFee: coordinationFee // Note: coordination fee is tracked separately, not included in net calculation
     });
 
     row.querySelector(`input[name="rows[${rowNum}][net_amount]"]`).value = netAmount.toFixed(2);
@@ -3428,11 +3470,11 @@ function loadJobSettings(jobId) {
         document.getElementById('defaultLocation').value = selectedJob.default_location || '';
         document.getElementById('locationNotes').value = selectedJob.location_notes || '';
         
-        // Recalculate coordinator fees for all existing rows
+        // Apply job settings to all existing rows
         const rows = document.querySelectorAll('tr:has(input[name*="[amount]"])');
         rows.forEach((row, index) => {
             const rowNum = index + 1;
-            calculateCoordinatorFee(rowNum);
+            applyJobSettingsToRow(rowNum);
         });
     }
 }
@@ -3521,6 +3563,54 @@ function saveJobSettings() {
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalText;
     });
+}
+
+// Function to apply job settings to a specific row
+function applyJobSettingsToRow(rowNum) {
+    const selectedJobId = document.getElementById('job_id').value;
+    if (!selectedJobId) return;
+
+    const selectedJob = jobs.find(job => job.id == selectedJobId);
+    if (!selectedJob) return;
+
+    const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
+    if (!row) return;
+
+    // Apply food allowance
+    if (selectedJob.default_food_allowance) {
+        const foodInput = row.querySelector(`input[name="rows[${rowNum}][food_allowance]"]`);
+        if (foodInput) foodInput.value = selectedJob.default_food_allowance;
+    }
+
+    // Apply accommodation allowance
+    if (selectedJob.default_accommodation_allowance) {
+        const accommodationInput = row.querySelector(`input[name="rows[${rowNum}][accommodation_allowance]"]`);
+        if (accommodationInput) accommodationInput.value = selectedJob.default_accommodation_allowance;
+    }
+
+    // Apply hold for 8 weeks
+    if (selectedJob.default_hold_for_8_weeks) {
+        const holdInput = row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`);
+        if (holdInput) holdInput.value = selectedJob.default_hold_for_8_weeks;
+    }
+
+    // Apply expenses
+    if (selectedJob.default_expenses) {
+        const expensesInput = row.querySelector(`input[name="rows[${rowNum}][expenses]"]`);
+        if (expensesInput) expensesInput.value = selectedJob.default_expenses;
+    }
+
+    // Apply location
+    if (selectedJob.default_location) {
+        const locationInput = row.querySelector(`input[name="rows[${rowNum}][location]"]`);
+        if (locationInput) locationInput.value = selectedJob.default_location;
+    }
+
+    // Calculate coordinator fee based on present days and job settings
+    calculateCoordinatorFee(rowNum);
+
+    // Recalculate net amount for this row
+    calculateRowNet(rowNum);
 }
 
 function applySettingsToAllRows() {

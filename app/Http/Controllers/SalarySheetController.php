@@ -112,9 +112,9 @@ class SalarySheetController extends Controller
                     'net_amount' => 0 // Will be calculated below
                 ];
 
-                // Calculate net amount
+                // Calculate net amount (excluding coordination fee)
                 $totalEarnings = $paymentData['amount'] + $paymentData['food_allowance'] +
-                                $paymentData['accommodation_allowance'] + (float) ($rowData['coordination_fee'] ?? 0);
+                                $paymentData['accommodation_allowance'];
                 $totalDeductions = $paymentData['expenses'] + $paymentData['hold_for_weeks'];
                 $paymentData['net_amount'] = $totalEarnings - $totalDeductions;
 
