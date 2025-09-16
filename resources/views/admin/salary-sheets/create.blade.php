@@ -1694,6 +1694,10 @@ function updateCoordinatorDisplay(rowNum, selectElement) {
 // Global variable to store current attendance dates
 let currentAttendanceDates = [];
 
+// Global variable to track if data has been auto-pulled for current job
+let hasAutoPulledData = false;
+let lastSelectedJobId = null;
+
 function validateAttendanceInput(input) {
     const value = parseFloat(input.value);
 
@@ -1803,6 +1807,20 @@ function updateAttendanceDates() {
             setTimeout(() => {
                 initializeHorizontalScroll();
             }, 100);
+
+            // Automatically pull existing data for the selected job (only once per job)
+            if (selectedOption.value !== lastSelectedJobId) {
+                hasAutoPulledData = false;
+                lastSelectedJobId = selectedOption.value;
+            }
+            
+            if (!hasAutoPulledData) {
+                setTimeout(() => {
+                    console.log('Auto-pulling data for selected job:', selectedOption.value);
+                    pullExistingData(true);
+                    hasAutoPulledData = true;
+                }, 200);
+            }
         }
     } else {
         // Clear dates when no job selected
@@ -1828,6 +1846,10 @@ function updateAttendanceDates() {
         if (pullDataBtn) {
             pullDataBtn.disabled = true;
         }
+        
+        // Reset auto-pull flag when no job is selected
+        hasAutoPulledData = false;
+        lastSelectedJobId = null;
     }
 }
 
@@ -2481,6 +2503,9 @@ function clearAllRows() {
     const tbody = document.getElementById('promoterRows');
     tbody.innerHTML = '';
     rowCounter = 1;
+    
+    // Reset auto-pull flag when clearing rows
+    hasAutoPulledData = false;
 }
 
 
@@ -2768,7 +2793,7 @@ function addPromoterRowFromJson(rowData, index) {
 }
 
 // Pull Data Functions
-function pullExistingData() {
+function pullExistingData(isAutoPull = false) {
     const jobSelect = document.getElementById('job_id');
     const selectedJobId = jobSelect.value;
 
@@ -2777,7 +2802,12 @@ function pullExistingData() {
         return;
     }
 
-    console.log('Pulling existing data for job:', selectedJobId);
+    console.log('Pulling existing data for job:', selectedJobId, isAutoPull ? '(auto-pull)' : '(manual)');
+    
+    // Reset auto-pull flag for manual pulls
+    if (!isAutoPull) {
+        hasAutoPulledData = false;
+    }
 
     // Show loading state
     const pullDataBtn = document.getElementById('pullDataBtn');
@@ -2847,12 +2877,12 @@ function pullExistingData() {
                 console.log('All calculations completed after pull data');
             }, 300);
 
-            showPullDataStatus('Data pulled successfully!', 'success');
+            showPullDataStatus(isAutoPull ? 'Previous data loaded automatically!' : 'Data pulled successfully!', 'success');
 
         })
     .catch(error => {
             console.error('Error pulling data:', error);
-            showPullDataStatus('No existing data found for this job.', 'error');
+            showPullDataStatus(isAutoPull ? 'No previous data found for this job.' : 'No existing data found for this job.', 'error');
     })
     .finally(() => {
         // Reset button state
