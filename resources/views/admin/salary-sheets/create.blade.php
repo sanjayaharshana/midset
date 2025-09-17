@@ -2204,15 +2204,15 @@ function calculateRowNet(rowNum) {
     const holdFor8Weeks = parseFloat(row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`).value) || 0;
     const coordinationFee = parseFloat(row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`).value) || 0;
 
-    // Calculate net amount: Earnings - Deductions (excluding coordination fee)
-    const totalEarnings = amount;
-    const totalDeductions = expenses + holdFor8Weeks;
+    // Calculate net amount: Earnings + Expenses - Deductions (excluding coordination fee)
+    const totalEarnings = amount + expenses;
+    const totalDeductions = holdFor8Weeks;
     const netAmount = totalEarnings - totalDeductions;
 
     console.log(`Row ${rowNum} Net Calculation:`, {
         amount: amount,
-        totalEarnings: totalEarnings,
         expenses: expenses,
+        totalEarnings: totalEarnings,
         holdFor8Weeks: holdFor8Weeks,
         totalDeductions: totalDeductions,
         netAmount: netAmount,
@@ -2244,8 +2244,8 @@ function calculateGrandTotal() {
         const expenses = parseFloat(expensesInput?.value) || 0;
         const holdFor8Weeks = parseFloat(holdFor8WeeksInput?.value) || 0;
 
-        const rowEarnings = amount + coordinationFee;
-        const rowDeductions = expenses + holdFor8Weeks;
+        const rowEarnings = amount + expenses + coordinationFee;
+        const rowDeductions = holdFor8Weeks;
 
         totalEarnings += rowEarnings;
         totalDeductions += rowDeductions;
@@ -2439,7 +2439,7 @@ function loadSalarySheetAsRow(sheet, index) {
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][amount]" value="${sheet.basic_salary || 0}" placeholder="Amount" onchange="calculateRowNet(${index})">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][expenses]" value="${sheet.expenses || 0}" placeholder="Expenses" onchange="calculateRowNet(${index})">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][hold_for_8_weeks]" value="${sheet.hold_for_8_weeks || 0}" placeholder="Hold" onchange="calculateRowNet(${index})">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][net_amount]" readonly value="${sheet.net_salary || 0}" title="Auto-calculated: Total - Expenses - Hold">
+                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][net_amount]" readonly value="${sheet.net_salary || 0}" title="Auto-calculated: Amount + Expenses - Hold">
             </div>
         </td>
         <td>
