@@ -190,11 +190,9 @@
                                     </div>
                                 </th>
                                 <th>
-                                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;width: 799px;">
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;width: 533px;">
                                         <div style="text-align: center; font-size: 0.7rem;">Amount</div>
-                                        <div style="text-align: center; font-size: 0.7rem;">Food Allowance</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Expenses</div>
-                                        <div style="text-align: center; font-size: 0.7rem;">Accommodation Allowance</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Hold For 8 weeks</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Net Amount</div>
                                     </div>
@@ -383,18 +381,6 @@
 
             <!-- Allowances Tab -->
             <div id="allowancesTabContent" class="tab-content">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                    <div>
-                        <label class="form-label">Default Food Allowance (Rs.)</label>
-                        <input type="number" step="0.01" class="form-control" id="defaultFoodAllowance" placeholder="0.00">
-                        <small class="form-text text-muted">Default daily food allowance for promoters</small>
-                    </div>
-                    <div>
-                        <label class="form-label">Default Accommodation Allowance (Rs.)</label>
-                        <input type="number" step="0.01" class="form-control" id="defaultAccommodationAllowance" placeholder="0.00">
-                        <small class="form-text text-muted">Default accommodation allowance for promoters</small>
-                    </div>
-                </div>
                 <div style="margin-top: 1.5rem;">
                     <label class="form-label">Default Expenses (Rs.)</label>
                     <input type="number" step="0.01" class="form-control" id="defaultExpenses" placeholder="0.00">
@@ -1411,11 +1397,9 @@ function addPromoterRow() {
             </div>
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][amount]" readonly title="Auto-calculated from Attendance Amount">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][food_allowance]" onchange="calculateRowNet(${nextRowNumber})">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][expenses]" onchange="calculateRowNet(${nextRowNumber})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][accommodation_allowance]" onchange="calculateRowNet(${nextRowNumber})">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${nextRowNumber})">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][net_amount]" readonly>
             </div>
@@ -2216,21 +2200,17 @@ function calculateAttendanceAmount(rowNum, presentDays) {
 function calculateRowNet(rowNum) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
     const amount = parseFloat(row.querySelector(`input[name="rows[${rowNum}][amount]"]`).value) || 0;
-    const foodAllowance = parseFloat(row.querySelector(`input[name="rows[${rowNum}][food_allowance]"]`).value) || 0;
     const expenses = parseFloat(row.querySelector(`input[name="rows[${rowNum}][expenses]"]`).value) || 0;
-    const accommodationAllowance = parseFloat(row.querySelector(`input[name="rows[${rowNum}][accommodation_allowance]"]`).value) || 0;
     const holdFor8Weeks = parseFloat(row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`).value) || 0;
     const coordinationFee = parseFloat(row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`).value) || 0;
 
     // Calculate net amount: Earnings - Deductions (excluding coordination fee)
-    const totalEarnings = amount + foodAllowance + accommodationAllowance;
+    const totalEarnings = amount;
     const totalDeductions = expenses + holdFor8Weeks;
     const netAmount = totalEarnings - totalDeductions;
 
     console.log(`Row ${rowNum} Net Calculation:`, {
         amount: amount,
-        foodAllowance: foodAllowance,
-        accommodationAllowance: accommodationAllowance,
         totalEarnings: totalEarnings,
         expenses: expenses,
         holdFor8Weeks: holdFor8Weeks,
@@ -2255,20 +2235,16 @@ function calculateGrandTotal() {
     rows.forEach((row, index) => {
         // Try multiple selector approaches to find inputs
         const amountInput = row.querySelector('input[name*="[amount]"]') || row.querySelector('input[name$="[amount]"]');
-        const foodAllowanceInput = row.querySelector('input[name*="[food_allowance]"]') || row.querySelector('input[name$="[food_allowance]"]');
-        const accommodationAllowanceInput = row.querySelector('input[name*="[accommodation_allowance]"]') || row.querySelector('input[name$="[accommodation_allowance]"]');
         const coordinationFeeInput = row.querySelector('input[name*="[coordination_fee]"]') || row.querySelector('input[name$="[coordination_fee]"]');
         const expensesInput = row.querySelector('input[name*="[expenses]"]') || row.querySelector('input[name$="[expenses]"]');
         const holdFor8WeeksInput = row.querySelector('input[name*="[hold_for_8_weeks]"]') || row.querySelector('input[name$="[hold_for_8_weeks]"]');
 
         const amount = parseFloat(amountInput?.value) || 0;
-        const foodAllowance = parseFloat(foodAllowanceInput?.value) || 0;
-        const accommodationAllowance = parseFloat(accommodationAllowanceInput?.value) || 0;
         const coordinationFee = parseFloat(coordinationFeeInput?.value) || 0;
         const expenses = parseFloat(expensesInput?.value) || 0;
         const holdFor8Weeks = parseFloat(holdFor8WeeksInput?.value) || 0;
 
-        const rowEarnings = amount + foodAllowance + accommodationAllowance + coordinationFee;
+        const rowEarnings = amount + coordinationFee;
         const rowDeductions = expenses + holdFor8Weeks;
 
         totalEarnings += rowEarnings;
@@ -2277,10 +2253,6 @@ function calculateGrandTotal() {
         console.log(`Row ${index + 1} Details:`, {
             amountInput: amountInput?.name || 'NOT FOUND',
             amount: amount,
-            foodAllowanceInput: foodAllowanceInput?.name || 'NOT FOUND',
-            foodAllowance: foodAllowance,
-            accommodationAllowanceInput: accommodationAllowanceInput?.name || 'NOT FOUND',
-            accommodationAllowance: accommodationAllowance,
             coordinationFeeInput: coordinationFeeInput?.name || 'NOT FOUND',
             coordinationFee: coordinationFee,
             expensesInput: expensesInput?.name || 'NOT FOUND',
@@ -2463,11 +2435,9 @@ function loadSalarySheetAsRow(sheet, index) {
             </div>
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][amount]" value="${sheet.basic_salary || 0}" placeholder="Amount" onchange="calculateRowNet(${index})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][food_allowance]" value="${sheet.food_allowance || 0}" placeholder="Food" onchange="calculateRowNet(${index})">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][expenses]" value="${sheet.expenses || 0}" placeholder="Expenses" onchange="calculateRowNet(${index})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][accommodation_allowance]" value="${sheet.accommodation_allowance || 0}" placeholder="Accommodation" onchange="calculateRowNet(${index})">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][hold_for_8_weeks]" value="${sheet.hold_for_8_weeks || 0}" placeholder="Hold" onchange="calculateRowNet(${index})">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][net_amount]" readonly value="${sheet.net_salary || 0}" title="Auto-calculated: Total - Expenses - Hold">
             </div>
@@ -2726,11 +2696,9 @@ function addPromoterRowFromJson(rowData, index) {
             </div>
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][amount]" readonly title="Auto-calculated from Attendance Amount" value="${rowData.amount || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][food_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.food_allowance || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][expenses]" onchange="calculateRowNet(${index + 1})" value="${rowData.expenses || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][accommodation_allowance]" onchange="calculateRowNet(${index + 1})" value="${rowData.accommodation_allowance || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][hold_for_8_weeks]" onchange="calculateRowNet(${index + 1})" value="${rowData.hold_for_8_weeks || 0}">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][net_amount]" readonly value="${rowData.net_amount || 0}">
             </div>
@@ -3494,8 +3462,6 @@ function loadJobSettings(jobId) {
         document.getElementById('defaultCoordinatorFee').value = selectedJob.default_coordinator_fee || '';
         document.getElementById('defaultHoldFor8Weeks').value = selectedJob.default_hold_for_8_weeks || '';
         document.getElementById('jobDescription').value = selectedJob.description || '';
-        document.getElementById('defaultFoodAllowance').value = selectedJob.default_food_allowance || '';
-        document.getElementById('defaultAccommodationAllowance').value = selectedJob.default_accommodation_allowance || '';
         document.getElementById('defaultExpenses').value = selectedJob.default_expenses || '';
         document.getElementById('defaultLocation').value = selectedJob.default_location || '';
         document.getElementById('locationNotes').value = selectedJob.location_notes || '';
@@ -3537,8 +3503,6 @@ function saveJobSettings() {
         default_coordinator_fee: document.getElementById('defaultCoordinatorFee').value,
         default_hold_for_8_weeks: document.getElementById('defaultHoldFor8Weeks').value,
         description: document.getElementById('jobDescription').value,
-        default_food_allowance: document.getElementById('defaultFoodAllowance').value,
-        default_accommodation_allowance: document.getElementById('defaultAccommodationAllowance').value,
         default_expenses: document.getElementById('defaultExpenses').value,
         default_location: document.getElementById('defaultLocation').value,
         location_notes: document.getElementById('locationNotes').value
@@ -3606,18 +3570,6 @@ function applyJobSettingsToRow(rowNum) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
     if (!row) return;
 
-    // Apply food allowance
-    if (selectedJob.default_food_allowance) {
-        const foodInput = row.querySelector(`input[name="rows[${rowNum}][food_allowance]"]`);
-        if (foodInput) foodInput.value = selectedJob.default_food_allowance;
-    }
-
-    // Apply accommodation allowance
-    if (selectedJob.default_accommodation_allowance) {
-        const accommodationInput = row.querySelector(`input[name="rows[${rowNum}][accommodation_allowance]"]`);
-        if (accommodationInput) accommodationInput.value = selectedJob.default_accommodation_allowance;
-    }
-
     // Apply hold for 8 weeks
     if (selectedJob.default_hold_for_8_weeks) {
         const holdInput = row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`);
@@ -3646,8 +3598,6 @@ function applyJobSettingsToRow(rowNum) {
 function applySettingsToAllRows() {
     const coordinatorFee = document.getElementById('defaultCoordinatorFee').value;
     const holdFor8Weeks = document.getElementById('defaultHoldFor8Weeks').value;
-    const foodAllowance = document.getElementById('defaultFoodAllowance').value;
-    const accommodationAllowance = document.getElementById('defaultAccommodationAllowance').value;
     const expenses = document.getElementById('defaultExpenses').value;
     const location = document.getElementById('defaultLocation').value;
 
@@ -3664,15 +3614,6 @@ function applySettingsToAllRows() {
             if (holdInput) holdInput.value = holdFor8Weeks;
         }
 
-        if (foodAllowance) {
-            const foodInput = row.querySelector(`input[name="rows[${rowNum}][food_allowance]"]`);
-            if (foodInput) foodInput.value = foodAllowance;
-        }
-
-        if (accommodationAllowance) {
-            const accommodationInput = row.querySelector(`input[name="rows[${rowNum}][accommodation_allowance]"]`);
-            if (accommodationInput) accommodationInput.value = accommodationAllowance;
-        }
 
         if (expenses) {
             const expensesInput = row.querySelector(`input[name="rows[${rowNum}][expenses]"]`);
