@@ -12,6 +12,7 @@ use App\Http\Controllers\PromoterPositionController;
 use App\Http\Controllers\CoordinatorController;
 use App\Http\Controllers\SalarySheetController;
 use App\Http\Controllers\PositionWiseSalaryRuleController;
+use App\Http\Controllers\AllowanceController;
 
 // Public routes
 Route::get('/', function () {
@@ -58,6 +59,9 @@ Route::middleware('auth')->group(function () {
     Route::get('admin/position-wise-salary-rules/get-rules', [PositionWiseSalaryRuleController::class, 'getRules'])->name('admin.position-wise-salary-rules.get-rules');
     Route::post('admin/position-wise-salary-rules/store-multiple', [PositionWiseSalaryRuleController::class, 'storeMultiple'])->name('admin.position-wise-salary-rules.store-multiple');
     Route::resource('admin/position-wise-salary-rules', PositionWiseSalaryRuleController::class)->names('admin.position-wise-salary-rules');
+
+    // Allowance Management routes
+    Route::resource('admin/allowances', AllowanceController::class)->names('admin.allowances');
 
     Route::post('admin/salary-sheet-enforce',[SalarySheetController::class,'enforce'])->name('admin.salary.enforce');
     

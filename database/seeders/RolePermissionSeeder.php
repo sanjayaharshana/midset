@@ -68,6 +68,12 @@ class RolePermissionSeeder extends Seeder
             'edit salary sheets',
             'delete salary sheets',
             
+            // Allowance Management
+            'view allowances',
+            'create allowances',
+            'edit allowances',
+            'delete allowances',
+            
             // Dashboard
             'view dashboard',
             
@@ -107,6 +113,9 @@ class RolePermissionSeeder extends Seeder
             'view salary sheets',
             'create salary sheets',
             'edit salary sheets',
+            'view allowances',
+            'create allowances',
+            'edit allowances',
             'view dashboard',
             'access admin panel',
         ]);
