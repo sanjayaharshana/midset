@@ -9,6 +9,8 @@
 @endsection
 
 @section('content')
+
+    <!-- Example in your Blade layout file -->
 <div class="card">
     <div class="card-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -115,8 +117,8 @@
                     </tbody>
                 </table>
             </div>
-            
-            <div style="margin-top: 1rem;">
+
+            <div class="pagination-container">
                 {{ $promoters->links() }}
             </div>
         @else
@@ -168,12 +170,17 @@
 
 .table-responsive {
     overflow-x: auto;
+    margin-top: 1rem;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .table th,
@@ -187,10 +194,15 @@
     background-color: #f9fafb;
     font-weight: 600;
     color: #374151;
+    border-bottom: 2px solid #e5e7eb;
 }
 
 .table tbody tr:hover {
     background-color: #f9fafb;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
 }
 
 .btn-sm {

@@ -122,7 +122,7 @@
                 </table>
             </div>
             
-            <div style="margin-top: 1rem;">
+            <div class="pagination-container">
                 {{ $jobs->links() }}
             </div>
         @else

@@ -111,7 +111,7 @@
                 </table>
             </div>
             
-            <div style="margin-top: 1rem;">
+            <div class="pagination-container">
                 {{ $salarySheets->links() }}
             </div>
         @else

@@ -593,6 +593,181 @@
                 font-size: 16px; /* Prevents zoom on iOS */
             }
         }
+
+        /* Common Pagination Styles for All Admin Pages */
+        .pagination-container {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* Override Tailwind CSS classes for pagination with !important */
+        .pagination-container nav {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-top: 0 !important;
+            padding: 1rem 0 !important;
+            border-top: none !important;
+            background: white !important;
+        }
+
+        .pagination-container .flex.justify-between.flex-1.sm\\:hidden {
+            display: none !important;
+        }
+
+        .pagination-container .hidden.sm\\:flex-1.sm\\:flex.sm\\:items-center.sm\\:justify-between {
+            display: flex !important;
+            flex: 1 !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+        }
+
+        .pagination-container .text-sm.text-gray-700.leading-5 {
+            color: #6b7280 !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+        }
+
+        .pagination-container .relative.z-0.inline-flex {
+            display: flex !important;
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 0.25rem !important;
+            box-shadow: none !important;
+            border-radius: 0.375rem !important;
+        }
+
+        .pagination-container .relative.inline-flex.items-center {
+            display: flex !important;
+            align-items: center !important;
+            position: relative !important;
+        }
+
+        /* Override all pagination button styles */
+        .pagination-container .relative.inline-flex.items-center.px-4.py-2,
+        .pagination-container .relative.inline-flex.items-center.px-2.py-2 {
+            padding: 0.5rem 0.75rem !important;
+            color: #374151 !important;
+            text-decoration: none !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+            background: white !important;
+            min-width: 2.5rem !important;
+            justify-content: center !important;
+            margin-left: -1px !important;
+        }
+
+        .pagination-container .relative.inline-flex.items-center.px-2.py-2 {
+            padding: 0.5rem 0.5rem !important;
+        }
+
+        /* Hover effects */
+        .pagination-container .relative.inline-flex.items-center.px-4.py-2:hover,
+        .pagination-container .relative.inline-flex.items-center.px-2.py-2:hover {
+            background-color: #f3f4f6 !important;
+            border-color: #9ca3af !important;
+            color: #1f2937 !important;
+            transform: translateY(-1px) !important;
+        }
+
+        /* Active page styling - override the current page */
+        .pagination-container .relative.inline-flex.items-center.px-4.py-2.-ml-px.text-sm.font-medium.text-gray-500.bg-white.border.border-gray-300.cursor-default {
+            background-color: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+            color: white !important;
+            font-weight: 600 !important;
+        }
+
+        /* Disabled styling for previous/next buttons */
+        .pagination-container .relative.inline-flex.items-center.px-2.py-2.text-sm.font-medium.text-gray-500.bg-white.border.border-gray-300.cursor-default {
+            color: #9ca3af !important;
+            background-color: #f9fafb !important;
+            border-color: #e5e7eb !important;
+            cursor: not-allowed !important;
+            opacity: 0.6 !important;
+        }
+
+        .pagination-container .relative.inline-flex.items-center.px-2.py-2.text-sm.font-medium.text-gray-500.bg-white.border.border-gray-300.cursor-default:hover {
+            background-color: #f9fafb !important;
+            border-color: #e5e7eb !important;
+            color: #9ca3af !important;
+            transform: none !important;
+        }
+
+        /* Rounded corners */
+        .pagination-container .rounded-l-md {
+            border-top-left-radius: 0.375rem !important;
+            border-bottom-left-radius: 0.375rem !important;
+        }
+
+        .pagination-container .rounded-r-md {
+            border-top-right-radius: 0.375rem !important;
+            border-bottom-right-radius: 0.375rem !important;
+        }
+
+        .pagination-container svg {
+            flex-shrink: 0 !important;
+            width: 16px !important;
+            height: 16px !important;
+        }
+
+        /* Responsive design for pagination */
+        @media (max-width: 768px) {
+            .pagination-container nav {
+                flex-direction: column !important;
+                gap: 1rem !important;
+                align-items: stretch !important;
+            }
+
+            .pagination-container .hidden.sm\\:flex-1.sm\\:flex.sm\\:items-center.sm\\:justify-between {
+                flex-direction: column !important;
+                gap: 1rem !important;
+                align-items: stretch !important;
+            }
+
+            .pagination-container .relative.z-0.inline-flex {
+                justify-content: center !important;
+                flex-wrap: wrap !important;
+            }
+
+            .pagination-container .relative.inline-flex.items-center.px-4.py-2,
+            .pagination-container .relative.inline-flex.items-center.px-2.py-2 {
+                padding: 0.375rem 0.5rem !important;
+                font-size: 0.8rem !important;
+                min-width: 2rem !important;
+            }
+
+            .pagination-container svg {
+                width: 14px !important;
+                height: 14px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .pagination-container .relative.z-0.inline-flex {
+                gap: 0.125rem !important;
+            }
+
+            .pagination-container .relative.inline-flex.items-center.px-4.py-2,
+            .pagination-container .relative.inline-flex.items-center.px-2.py-2 {
+                padding: 0.25rem 0.375rem !important;
+                font-size: 0.75rem !important;
+                min-width: 1.75rem !important;
+            }
+
+            .pagination-container .text-sm.text-gray-700.leading-5 {
+                font-size: 0.8rem !important;
+                text-align: center !important;
+            }
+        }
     </style>
 </head>
 <body>
