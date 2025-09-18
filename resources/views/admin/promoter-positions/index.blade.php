@@ -97,7 +97,9 @@
             </div>
             
             <div style="margin-top: 1rem;">
+            <div class="pagination-container">
                 {{ $positions->links() }}
+            </div>
             </div>
         @else
             <div style="text-align: center; padding: 2rem;">
