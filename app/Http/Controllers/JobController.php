@@ -197,6 +197,43 @@ class JobController extends Controller
     }
 
     /**
+     * Update allowance rules for a job
+     */
+    public function updateAllowanceRules(Request $request, Job $job)
+    {
+        $validator = Validator::make($request->all(), [
+            'allowance' => 'nullable|array',
+            'allowance.*.allowance_name' => 'required_with:allowance|string|max:255',
+            'allowance.*.price' => 'required_with:allowance|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $job->update([
+                'allowance' => $request->allowance ?? []
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Allowance rules updated successfully.',
+                'job' => $job->fresh()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update allowance rules: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Job $job)

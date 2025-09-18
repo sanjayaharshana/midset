@@ -8,6 +8,7 @@ use App\Models\EmployersSalarySheetItem;
 use App\Models\Promoter;
 use App\Models\Coordinator;
 use App\Models\Job;
+use App\Models\Allowance;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 
@@ -38,8 +39,9 @@ class SalarySheetController extends Controller
         $promoters = Promoter::with('position')->get();
         $coordinators = Coordinator::all();
         $jobs = Job::with('client')->get();
+        $allowances = Allowance::all();
 
-        return view('admin.salary-sheets.create', compact('promoters', 'coordinators', 'jobs'));
+        return view('admin.salary-sheets.create', compact('promoters', 'coordinators', 'jobs', 'allowances'));
     }
 
     /**

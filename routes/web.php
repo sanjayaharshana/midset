@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     // Job Management routes
     Route::resource('admin/jobs', JobController::class)->names('admin.jobs');
     Route::post('admin/jobs/{job}/update-settings', [JobController::class, 'updateSettings'])->name('admin.jobs.update-settings');
+    Route::post('admin/jobs/{job}/update-allowance-rules', [JobController::class, 'updateAllowanceRules'])->name('admin.jobs.update-allowance-rules');
 
     // Promoter Management routes
     Route::resource('admin/promoters', PromoterController::class)->names('admin.promoters');

@@ -29,6 +29,7 @@ class Job extends Model
         'default_expenses',
         'default_location',
         'location_notes',
+        'allowance',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class Job extends Model
         'end_date' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'allowance' => 'array',
     ];
 
     /**

@@ -33,6 +33,12 @@
                         </svg>
                         Position Wise Salary Rule
                     </button>
+                    <button type="button" id="allowanceRuleBtn" class="btn btn-warning" onclick="openAllowanceRuleModal()" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                        </svg>
+                        Add Allowance Rule
+                    </button>
                     <button type="button" class="btn btn-info" onclick="openJobSettingsModal()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                             <circle cx="12" cy="12" r="3"></circle>
@@ -322,6 +328,36 @@
                 <button type="button" id="cancelModalBtn" class="btn btn-secondary" style="margin-left: 0.5rem;">Cancel</button>
             </div>
             </div> <!-- End of modalMainContent -->
+        </div>
+    </div>
+</div>
+
+<!-- Allowance Rule Modal -->
+<div id="allowanceRuleModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 90%;">
+        <div class="modal-header">
+            <h3>Allowance Rules</h3>
+            <span class="close" id="allowanceRuleCloseBtn">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 1rem;">
+                <button type="button" id="addAllowanceRowBtn" class="btn btn-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Row
+                </button>
+            </div>
+
+            <div id="allowanceRulesContainer">
+                <!-- Dynamic allowance rows will be added here -->
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeAllowanceRuleModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAllowanceRules()">Save Allowance Rules</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1324,7 +1360,213 @@
 const promoters = @json($promoters);
 const coordinators = @json($coordinators);
 const jobs = @json($jobs);
+const allowances = @json($allowances);
 let rowCounter = 1;
+let allowanceRuleCounter = 0;
+
+// Debug allowances data
+console.log('Allowances data:', allowances);
+console.log('Allowances count:', allowances ? allowances.length : 'undefined');
+
+// Allowance Rule Modal Functions
+function openAllowanceRuleModal() {
+    const selectedJobId = document.getElementById('job_id').value;
+    if (!selectedJobId) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Job Selection Required',
+            text: 'Please select a job first before adding allowance rules.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    document.getElementById('allowanceRuleModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    // Load existing allowance rules for the selected job
+    loadExistingAllowanceRules();
+}
+
+function closeAllowanceRuleModal() {
+    document.getElementById('allowanceRuleModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    clearAllowanceRules();
+}
+
+function addAllowanceRow() {
+    allowanceRuleCounter++;
+    const container = document.getElementById('allowanceRulesContainer');
+
+    console.log('Adding allowance row. Allowances available:', allowances);
+    console.log('Allowances map result:', allowances.map(allowance => 
+        `<option value="${allowance.name}">${allowance.name}</option>`
+    ).join(''));
+
+    const row = document.createElement('div');
+    row.className = 'allowance-rule-row';
+    row.id = `allowanceRuleRow-${allowanceRuleCounter}`;
+    row.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        background: #f9fafb;
+    `;
+
+    row.innerHTML = `
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #374151;">Allowance Name</label>
+            <select class="form-control" name="allowance_rules[${allowanceRuleCounter}][allowance_name]" required>
+                <option value="">Select Allowance</option>
+                ${allowances.map(allowance => 
+                    `<option value="${allowance.name}">${allowance.name}</option>`
+                ).join('')}
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #374151;">Price (Rs.)</label>
+            <input type="number" step="0.01" class="form-control" name="allowance_rules[${allowanceRuleCounter}][price]" placeholder="0.00" required>
+        </div>
+        <div style="flex: 0 0 auto;">
+            <button type="button" class="btn btn-danger" onclick="removeAllowanceRow(${allowanceRuleCounter})" style="margin-top: 1.5rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3,6 5,6 21,6"></polyline>
+                    <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    container.appendChild(row);
+}
+
+function removeAllowanceRow(rowId) {
+    const row = document.getElementById(`allowanceRuleRow-${rowId}`);
+    if (row) {
+        row.remove();
+    }
+}
+
+function clearAllowanceRules() {
+    const container = document.getElementById('allowanceRulesContainer');
+    container.innerHTML = '';
+    allowanceRuleCounter = 0;
+}
+
+function loadExistingAllowanceRules() {
+    const selectedJobId = document.getElementById('job_id').value;
+    const selectedJob = jobs.find(job => job.id == selectedJobId);
+    
+    clearAllowanceRules();
+    
+    if (selectedJob && selectedJob.allowance && Array.isArray(selectedJob.allowance)) {
+        selectedJob.allowance.forEach(allowanceRule => {
+            addAllowanceRow();
+            const lastRow = document.querySelector('.allowance-rule-row:last-child');
+            if (lastRow) {
+                const allowanceSelect = lastRow.querySelector('select[name*="[allowance_name]"]');
+                const priceInput = lastRow.querySelector('input[name*="[price]"]');
+                
+                if (allowanceSelect) allowanceSelect.value = allowanceRule.allowance_name || '';
+                if (priceInput) priceInput.value = allowanceRule.price || '';
+            }
+        });
+    }
+}
+
+function saveAllowanceRules() {
+    const selectedJobId = document.getElementById('job_id').value;
+    if (!selectedJobId) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Job Selection Required',
+            text: 'Please select a job first.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    const allowanceRules = [];
+    const rows = document.querySelectorAll('.allowance-rule-row');
+    
+    rows.forEach(row => {
+        const allowanceName = row.querySelector('select[name*="[allowance_name]"]').value;
+        const price = row.querySelector('input[name*="[price]"]').value;
+        
+        if (allowanceName && price) {
+            allowanceRules.push({
+                allowance_name: allowanceName,
+                price: parseFloat(price)
+            });
+        }
+    });
+
+    // Show loading state
+    const saveBtn = document.querySelector('#allowanceRuleModal .btn-primary');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+            <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+        </svg>
+        Saving...
+    `;
+
+    // Send data to server
+    fetch(`/admin/jobs/${selectedJobId}/update-allowance-rules`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ allowance: allowanceRules })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Allowance rules saved successfully!',
+                confirmButtonText: 'OK'
+            });
+            closeAllowanceRuleModal();
+            
+            // Update the jobs array with the new data
+            const jobIndex = jobs.findIndex(job => job.id == selectedJobId);
+            if (jobIndex !== -1) {
+                jobs[jobIndex].allowance = allowanceRules;
+            }
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error: ' + data.message,
+                confirmButtonText: 'OK'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to save allowance rules. Please try again.',
+            confirmButtonText: 'OK'
+        });
+    })
+    .finally(() => {
+        // Restore button state
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    });
+}
 
 function addPromoterRow() {
     const jobSelect = document.getElementById('job_id');
@@ -1750,6 +1992,7 @@ function updateAttendanceDates() {
     const salaryTableContainer = document.getElementById('salaryTableContainer');
     const addPromoterBtn = document.getElementById('addPromoterBtn');
     const salaryRuleBtn = document.getElementById('salaryRuleBtn');
+    const allowanceRuleBtn = document.getElementById('allowanceRuleBtn');
     const attendanceLegend = document.getElementById('attendanceLegend');
 
     if (selectedOption.value) {
@@ -1786,6 +2029,7 @@ function updateAttendanceDates() {
             // Enable buttons
             addPromoterBtn.disabled = false;
             salaryRuleBtn.disabled = false;
+            allowanceRuleBtn.disabled = false;
 
             // Initialize horizontal scroll functionality
             setTimeout(() => {
@@ -1824,6 +2068,7 @@ function updateAttendanceDates() {
         // Disable buttons
         addPromoterBtn.disabled = true;
         salaryRuleBtn.disabled = true;
+        allowanceRuleBtn.disabled = true;
 
         // Disable Pull Data button when no job is selected
         const pullDataBtn = document.getElementById('pullDataBtn');
@@ -2495,6 +2740,17 @@ function saveSalarySheet() {
 document.addEventListener('DOMContentLoaded', function() {
     addPromoterRow();
     generateSheetNumber();
+    
+    // Add event listeners for allowance modal
+    document.getElementById('addAllowanceRowBtn').addEventListener('click', addAllowanceRow);
+    document.getElementById('allowanceRuleCloseBtn').addEventListener('click', closeAllowanceRuleModal);
+    
+    // Handle modal background click to close
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'allowanceRuleModal') {
+            closeAllowanceRuleModal();
+        }
+    });
 });
 
 // JSON Import Functions
