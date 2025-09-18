@@ -195,8 +195,8 @@
                                         <div style="text-align: center; font-size: 0.7rem;">Amount</div>
                                     </div>
                                 </th>
-                                <th>
-                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;width: 533px;">
+                                <th id="paymentColumn">
+                                    <div id="paymentHeaders" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;width: 533px;">
                                         <div style="text-align: center; font-size: 0.7rem;">Amount</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Expenses</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Hold For 8 weeks</div>
@@ -1364,9 +1364,111 @@ const allowances = @json($allowances);
 let rowCounter = 1;
 let allowanceRuleCounter = 0;
 
-// Debug allowances data
-console.log('Allowances data:', allowances);
-console.log('Allowances count:', allowances ? allowances.length : 'undefined');
+// Function to update payment column headers based on job allowance rules
+function updatePaymentHeaders(jobAllowances = []) {
+    const paymentHeaders = document.getElementById('paymentHeaders');
+    const paymentColumn = document.getElementById('paymentColumn');
+    
+    if (!paymentHeaders || !paymentColumn) return;
+    
+    // Base columns: Amount, Expenses, Hold For 8 weeks, Net Amount
+    const baseColumns = 4;
+    const allowanceColumns = jobAllowances.length;
+    const totalColumns = baseColumns + allowanceColumns;
+    
+    // Update grid template columns
+    const columnWidth = 533 + (allowanceColumns * 100); // Add 100px per allowance column
+    paymentHeaders.style.gridTemplateColumns = `repeat(${totalColumns}, 1fr)`;
+    paymentHeaders.style.width = `${columnWidth}px`;
+    
+    // Create header HTML
+    let headerHTML = `
+        <div style="text-align: center; font-size: 0.7rem;">Amount</div>
+        <div style="text-align: center; font-size: 0.7rem;">Expenses</div>
+        <div style="text-align: center; font-size: 0.7rem;">Hold For 8 weeks</div>
+    `;
+    
+    // Add allowance headers
+    jobAllowances.forEach(allowance => {
+        headerHTML += `<div style="text-align: center; font-size: 0.7rem;">${allowance.allowance_name}</div>`;
+    });
+    
+    // Add Net Amount header
+    headerHTML += `<div style="text-align: center; font-size: 0.7rem;">Net Amount</div>`;
+    
+    paymentHeaders.innerHTML = headerHTML;
+    
+    console.log('Updated payment headers with allowances:', jobAllowances);
+}
+
+// Function to generate payment row HTML with allowance columns
+function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {}) {
+    const baseColumns = 4;
+    const allowanceColumns = jobAllowances.length;
+    const totalColumns = baseColumns + allowanceColumns;
+    const columnWidth = 533 + (allowanceColumns * 100);
+    
+    let rowHTML = `
+        <div style="display: grid; grid-template-columns: repeat(${totalColumns}, 1fr); gap: 0.75rem; width: ${columnWidth}px;">
+            <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowNumber}][amount]" readonly title="Auto-calculated from Attendance Amount" value="${defaultValues.amount || 0}">
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][expenses]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.expenses || 0}">
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.hold_for_8_weeks || 0}">
+    `;
+    
+    // Add allowance input fields
+    jobAllowances.forEach((allowance, index) => {
+        const defaultValue = defaultValues[allowance.allowance_name] || allowance.price || 0;
+        rowHTML += `
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][allowances][${allowance.allowance_name}]" 
+                   value="${defaultValue}" placeholder="0.00" onchange="calculateRowNet(${rowNumber})" 
+                   title="${allowance.allowance_name}">
+        `;
+    });
+    
+    // Add Net Amount field
+    rowHTML += `
+            <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowNumber}][net_amount]" readonly title="Auto-calculated: Amount + Expenses + Allowances - Hold" value="${defaultValues.net_amount || 0}">
+        </div>
+    `;
+    
+    return rowHTML;
+}
+
+// Function to get current job's allowance rules
+function getCurrentJobAllowances() {
+    const selectedJobId = document.getElementById('job_id').value;
+    if (!selectedJobId) return [];
+    
+    const selectedJob = jobs.find(job => job.id == selectedJobId);
+    if (!selectedJob || !selectedJob.allowance) return [];
+    
+    return selectedJob.allowance || [];
+}
+
+// Function to update all existing payment rows with new allowance columns
+function updateAllPaymentRows(jobAllowances = []) {
+    const rows = document.querySelectorAll('#promoterRows tr');
+    
+    rows.forEach((row, index) => {
+        const rowNumber = index + 1;
+        const paymentCell = document.getElementById(`paymentCell-${rowNumber}`);
+        
+        if (paymentCell) {
+            // Get current values from existing inputs
+            const currentValues = {
+                amount: paymentCell.querySelector('input[name*="[amount]"]')?.value || 0,
+                expenses: paymentCell.querySelector('input[name*="[expenses]"]')?.value || 0,
+                hold_for_8_weeks: paymentCell.querySelector('input[name*="[hold_for_8_weeks]"]')?.value || 0,
+                net_amount: paymentCell.querySelector('input[name*="[net_amount]"]')?.value || 0
+            };
+            
+            // Generate new payment row HTML with allowance columns
+            paymentCell.innerHTML = generatePaymentRowHTML(rowNumber, jobAllowances, currentValues);
+        }
+    });
+    
+    console.log('Updated all payment rows with allowance columns');
+}
 
 // Allowance Rule Modal Functions
 function openAllowanceRuleModal() {
@@ -1543,6 +1645,15 @@ function saveAllowanceRules() {
             if (jobIndex !== -1) {
                 jobs[jobIndex].allowance = allowanceRules;
             }
+            
+            // Update payment headers with new allowance rules
+            const jobAllowances = getCurrentJobAllowances();
+            updatePaymentHeaders(jobAllowances);
+            
+            // Update all existing payment rows
+            updateAllPaymentRows(jobAllowances);
+            
+            console.log('Allowance rules saved and UI updated successfully');
         } else {
             Swal.fire({
                 icon: 'error',
@@ -1638,13 +1749,8 @@ function addPromoterRow() {
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days">
             </div>
         </td>
-        <td>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][amount]" readonly title="Auto-calculated from Attendance Amount">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][expenses]" onchange="calculateRowNet(${nextRowNumber})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${nextRowNumber})">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][net_amount]" readonly>
-            </div>
+        <td id="paymentCell-${nextRowNumber}">
+            ${generatePaymentRowHTML(nextRowNumber, getCurrentJobAllowances())}
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
@@ -2007,6 +2113,10 @@ function updateAttendanceDates() {
 
             // Load position salary rules for the selected job
             loadPositionSalaryRules();
+
+            // Update payment headers with job allowance rules
+            const jobAllowances = getCurrentJobAllowances();
+            updatePaymentHeaders(jobAllowances);
 
             // Apply job settings to all existing rows when job is selected
             const rows = document.querySelectorAll('#promoterRows tr');
@@ -2449,14 +2559,22 @@ function calculateRowNet(rowNum) {
     const holdFor8Weeks = parseFloat(row.querySelector(`input[name="rows[${rowNum}][hold_for_8_weeks]"]`).value) || 0;
     const coordinationFee = parseFloat(row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`).value) || 0;
 
-    // Calculate net amount: Earnings + Expenses - Deductions (excluding coordination fee)
-    const totalEarnings = amount + expenses;
+    // Calculate total allowances
+    let totalAllowances = 0;
+    const allowanceInputs = row.querySelectorAll(`input[name^="rows[${rowNum}][allowances]"]`);
+    allowanceInputs.forEach(input => {
+        totalAllowances += parseFloat(input.value) || 0;
+    });
+
+    // Calculate net amount: Earnings + Expenses + Allowances - Deductions (excluding coordination fee)
+    const totalEarnings = amount + expenses + totalAllowances;
     const totalDeductions = holdFor8Weeks;
     const netAmount = totalEarnings - totalDeductions;
 
     console.log(`Row ${rowNum} Net Calculation:`, {
         amount: amount,
         expenses: expenses,
+        totalAllowances: totalAllowances,
         totalEarnings: totalEarnings,
         holdFor8Weeks: holdFor8Weeks,
         totalDeductions: totalDeductions,
@@ -2477,37 +2595,45 @@ function calculateGrandTotal() {
     console.log('=== GRAND TOTAL CALCULATION DEBUG ===');
     console.log('Found rows:', rows.length);
 
-    rows.forEach((row, index) => {
-        // Try multiple selector approaches to find inputs
-        const amountInput = row.querySelector('input[name*="[amount]"]') || row.querySelector('input[name$="[amount]"]');
-        const coordinationFeeInput = row.querySelector('input[name*="[coordination_fee]"]') || row.querySelector('input[name$="[coordination_fee]"]');
-        const expensesInput = row.querySelector('input[name*="[expenses]"]') || row.querySelector('input[name$="[expenses]"]');
-        const holdFor8WeeksInput = row.querySelector('input[name*="[hold_for_8_weeks]"]') || row.querySelector('input[name$="[hold_for_8_weeks]"]');
+            rows.forEach((row, index) => {
+                // Try multiple selector approaches to find inputs
+                const amountInput = row.querySelector('input[name*="[amount]"]') || row.querySelector('input[name$="[amount]"]');
+                const coordinationFeeInput = row.querySelector('input[name*="[coordination_fee]"]') || row.querySelector('input[name$="[coordination_fee]"]');
+                const expensesInput = row.querySelector('input[name*="[expenses]"]') || row.querySelector('input[name$="[expenses]"]');
+                const holdFor8WeeksInput = row.querySelector('input[name*="[hold_for_8_weeks]"]') || row.querySelector('input[name$="[hold_for_8_weeks]"]');
 
-        const amount = parseFloat(amountInput?.value) || 0;
-        const coordinationFee = parseFloat(coordinationFeeInput?.value) || 0;
-        const expenses = parseFloat(expensesInput?.value) || 0;
-        const holdFor8Weeks = parseFloat(holdFor8WeeksInput?.value) || 0;
+                const amount = parseFloat(amountInput?.value) || 0;
+                const coordinationFee = parseFloat(coordinationFeeInput?.value) || 0;
+                const expenses = parseFloat(expensesInput?.value) || 0;
+                const holdFor8Weeks = parseFloat(holdFor8WeeksInput?.value) || 0;
 
-        const rowEarnings = amount + expenses + coordinationFee;
-        const rowDeductions = holdFor8Weeks;
+                // Calculate total allowances for this row
+                let totalAllowances = 0;
+                const allowanceInputs = row.querySelectorAll('input[name*="[allowances]"]');
+                allowanceInputs.forEach(input => {
+                    totalAllowances += parseFloat(input.value) || 0;
+                });
 
-        totalEarnings += rowEarnings;
-        totalDeductions += rowDeductions;
+                const rowEarnings = amount + expenses + totalAllowances + coordinationFee;
+                const rowDeductions = holdFor8Weeks;
 
-        console.log(`Row ${index + 1} Details:`, {
-            amountInput: amountInput?.name || 'NOT FOUND',
-            amount: amount,
-            coordinationFeeInput: coordinationFeeInput?.name || 'NOT FOUND',
-            coordinationFee: coordinationFee,
-            expensesInput: expensesInput?.name || 'NOT FOUND',
-            expenses: expenses,
-            holdFor8WeeksInput: holdFor8WeeksInput?.name || 'NOT FOUND',
-            holdFor8Weeks: holdFor8Weeks,
-            rowEarnings: rowEarnings,
-            rowDeductions: rowDeductions
-        });
-    });
+                totalEarnings += rowEarnings;
+                totalDeductions += rowDeductions;
+
+                console.log(`Row ${index + 1} Details:`, {
+                    amountInput: amountInput?.name || 'NOT FOUND',
+                    amount: amount,
+                    coordinationFeeInput: coordinationFeeInput?.name || 'NOT FOUND',
+                    coordinationFee: coordinationFee,
+                    expensesInput: expensesInput?.name || 'NOT FOUND',
+                    expenses: expenses,
+                    totalAllowances: totalAllowances,
+                    holdFor8WeeksInput: holdFor8WeeksInput?.name || 'NOT FOUND',
+                    holdFor8Weeks: holdFor8Weeks,
+                    rowEarnings: rowEarnings,
+                    rowDeductions: rowDeductions
+                });
+            });
 
     const netSalary = totalEarnings - totalDeductions;
 
@@ -2679,13 +2805,13 @@ function loadSalarySheetAsRow(sheet, index) {
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][attendance_amount]" readonly value="${sheet.attendance_amount || 0}" title="Auto-calculated: Position Salary × Present Days">
             </div>
         </td>
-        <td>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][amount]" value="${sheet.basic_salary || 0}" placeholder="Amount" onchange="calculateRowNet(${index})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][expenses]" value="${sheet.expenses || 0}" placeholder="Expenses" onchange="calculateRowNet(${index})">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][hold_for_8_weeks]" value="${sheet.hold_for_8_weeks || 0}" placeholder="Hold" onchange="calculateRowNet(${index})">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][net_amount]" readonly value="${sheet.net_salary || 0}" title="Auto-calculated: Amount + Expenses - Hold">
-            </div>
+        <td id="paymentCell-${index}">
+            ${generatePaymentRowHTML(index, getCurrentJobAllowances(), {
+                amount: sheet.basic_salary || 0,
+                expenses: sheet.expenses || 0,
+                hold_for_8_weeks: sheet.hold_for_8_weeks || 0,
+                net_amount: sheet.net_salary || 0
+            })}
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
@@ -2951,13 +3077,13 @@ function addPromoterRowFromJson(rowData, index) {
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days" value="${rowData.attendance_amount || 0}">
             </div>
         </td>
-        <td>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][amount]" readonly title="Auto-calculated from Attendance Amount" value="${rowData.amount || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][expenses]" onchange="calculateRowNet(${index + 1})" value="${rowData.expenses || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][hold_for_8_weeks]" onchange="calculateRowNet(${index + 1})" value="${rowData.hold_for_8_weeks || 0}">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][net_amount]" readonly value="${rowData.net_amount || 0}">
-            </div>
+        <td id="paymentCell-${index + 1}">
+            ${generatePaymentRowHTML(index + 1, getCurrentJobAllowances(), {
+                amount: rowData.amount || 0,
+                expenses: rowData.expenses || 0,
+                hold_for_8_weeks: rowData.hold_for_8_weeks || 0,
+                net_amount: rowData.net_amount || 0
+            })}
         </td>
         <td>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
