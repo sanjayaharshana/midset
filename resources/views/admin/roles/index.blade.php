@@ -62,7 +62,9 @@
             </table>
             
             <div style="margin-top: 1rem;">
+            <div class="pagination-container">
                 {{ $roles->links() }}
+            </div>
             </div>
         @else
             <p>No roles found. <a href="{{ route('admin.roles.create') }}">Create the first role</a></p>
