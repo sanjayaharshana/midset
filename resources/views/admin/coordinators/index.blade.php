@@ -107,7 +107,9 @@
             </div>
             
             <div style="margin-top: 1rem;">
+            <div class="pagination-container">
                 {{ $coordinators->links() }}
+            </div>
             </div>
         @else
             <div style="text-align: center; padding: 2rem;">

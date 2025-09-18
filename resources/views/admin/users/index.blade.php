@@ -63,7 +63,9 @@
             </table>
             
             <div style="margin-top: 1rem;">
+            <div class="pagination-container">
                 {{ $users->links() }}
+            </div>
             </div>
         @else
             <p>No users found. <a href="{{ route('admin.users.create') }}">Add the first user</a></p>
