@@ -62,8 +62,8 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
                     @foreach($roles as $role)
                         <label style="display: flex; align-items: center; padding: 0.5rem; border: 1px solid #e1e5e9; border-radius: 5px; cursor: pointer;">
-                            <input type="checkbox" name="roles[]" value="{{ $role->id }}" 
-                                   {{ in_array($role->id, old('roles', $userRoles)) ? 'checked' : '' }}
+                            <input type="checkbox" name="roles[]" value="{{ $role->name }}" 
+                                   {{ in_array($role->name, old('roles', $userRoles)) ? 'checked' : '' }}
                                    style="margin-right: 0.5rem;">
                             {{ $role->name }}
                         </label>

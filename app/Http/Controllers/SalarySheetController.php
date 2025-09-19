@@ -24,9 +24,18 @@ class SalarySheetController extends Controller
      */
     public function index()
     {
-        $salarySheets = SalarySheet::with(['job', 'items.position'])
+        $salarySheets = SalarySheet::with(['job.client', 'items.position'])
+            ->withCount(['items'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
+
+        // Add promoters count for each salary sheet
+        $salarySheets->getCollection()->transform(function ($sheet) {
+            $sheet->promoters_count = $sheet->items->filter(function ($item) {
+                return isset($item->attendance_data['promoter_id']) && !empty($item->attendance_data['promoter_id']);
+            })->count();
+            return $sheet;
+        });
 
         return view('admin.salary-sheets.index', compact('salarySheets'));
     }
@@ -477,6 +486,16 @@ class SalarySheetController extends Controller
                 ->withErrors(['error' => 'Failed to ' . $action . ' salary sheet: ' . $e->getMessage()])
                 ->withInput();
         }
+    }
+
+    /**
+     * Print salary sheet
+     */
+    public function print(SalarySheet $salarySheet)
+    {
+        $salarySheet->load(['job.client', 'items.position']);
+
+        return view('admin.salary-sheets.print', compact('salarySheet'));
     }
 
     /**

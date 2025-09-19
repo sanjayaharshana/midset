@@ -34,8 +34,8 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.5rem; max-height: 300px; overflow-y: auto; border: 1px solid #e1e5e9; padding: 1rem; border-radius: 5px;">
                     @foreach($permissions as $permission)
                         <label style="display: flex; align-items: center; padding: 0.5rem; border: 1px solid #e1e5e9; border-radius: 5px; cursor: pointer;">
-                            <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" 
-                                   {{ in_array($permission->id, old('permissions', $rolePermissions)) ? 'checked' : '' }}
+                            <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" 
+                                   {{ in_array($permission->name, old('permissions', $rolePermissions)) ? 'checked' : '' }}
                                    style="margin-right: 0.5rem;">
                             {{ $permission->name }}
                         </label>

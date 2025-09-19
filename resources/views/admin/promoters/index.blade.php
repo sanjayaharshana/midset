@@ -15,15 +15,27 @@
     <div class="card-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3>All Promoters</h3>
-            @can('create promoters')
-                <a href="{{ route('admin.promoters.create') }}" class="btn btn-success">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add New Promoter
-                </a>
-            @endcan
+            <div style="display: flex; gap: 0.5rem;">
+                @can('create promoters')
+                    <button type="button" class="btn btn-info" onclick="openCsvImportModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14,2 14,8 20,8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10,9 9,9 8,9"></polyline>
+                        </svg>
+                        Import CSV
+                    </button>
+                    <a href="{{ route('admin.promoters.create') }}" class="btn btn-success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add New Promoter
+                    </a>
+                @endcan
+            </div>
         </div>
     </div>
     <div class="card-body">
@@ -235,5 +247,464 @@
     opacity: 0.9;
     transform: translateY(-1px);
 }
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: modalSlideIn 0.2s ease-out;
+    overflow: hidden;
+    position: relative;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffffff;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.close {
+    color: #6b7280;
+    font-size: 1.5rem;
+    font-weight: 400;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close:hover {
+    color: #374151;
+    background-color: #f3f4f6;
+}
+
+.modal-body {
+    padding: 2rem;
+    max-height: calc(90vh - 140px);
+    overflow-y: auto;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.alert h6 {
+    margin: 0 0 0.75rem 0;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.alert ul {
+    margin: 0.5rem 0 0 0;
+    padding-left: 1.25rem;
+}
+
+.alert li {
+    margin-bottom: 0.25rem;
+}
+
+.alert-info {
+    color: #1e40af;
+    background-color: #eff6ff;
+    border-color: #dbeafe;
+}
+
+.alert-warning {
+    color: #92400e;
+    background-color: #fffbeb;
+    border-color: #fed7aa;
+}
+
+.alert-success {
+    color: #166534;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.alert-danger {
+    color: #991b1b;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+/* Form Styles */
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #374151;
+    background-color: #ffffff;
+    background-clip: padding-box;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    color: #374151;
+    background-color: #ffffff;
+    border-color: #3b82f6;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-text {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    text-decoration: none;
+    min-height: 2.5rem;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+    color: #ffffff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: #4b5563;
+    border-color: #4b5563;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-info {
+    background-color: transparent;
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.btn-outline-info:hover {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    min-height: 2rem;
+}
+
+/* Modal Footer */
+.modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal {
+        padding: 0.5rem;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        margin: 0;
+    }
+    
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.125rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .alert {
+        padding: 0.875rem 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .alert ul {
+        padding-left: 1rem;
+    }
+}
 </style>
+
+<!-- CSV Import Modal -->
+<div id="csvImportModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Import Promoters from CSV</h3>
+            <span class="close" onclick="closeCsvImportModal()">&times;</span>
+        </div>
+        <form id="csvImportForm" action="{{ route('admin.promoters.import-csv') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="modal-body">
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="csvFile" class="form-label">Select CSV File</label>
+                    <input type="file" class="form-control" id="csvFile" name="csv_file" accept=".csv" required>
+                    <div class="form-text">Please select a CSV file containing promoter data.</div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6>CSV Format Requirements</h6>
+                    <p style="margin-bottom: 0.75rem;">Your CSV file should contain the following columns (in any order):</p>
+                    <ul>
+                        <li><strong>promoter_name</strong> - Full name of the promoter</li>
+                        <li><strong>position_name</strong> - Position name (must match existing positions)</li>
+                        <li><strong>identity_card_no</strong> - ID card number</li>
+                        <li><strong>phone_no</strong> - Phone number</li>
+                        <li><strong>bank_name</strong> - Bank name</li>
+                        <li><strong>bank_branch_name</strong> - Bank branch name</li>
+                        <li><strong>bank_account_number</strong> - Bank account number</li>
+                        <li><strong>status</strong> - Status (active, inactive, suspended)</li>
+                    </ul>
+                    <div style="margin-top: 1rem;">
+                        <a href="{{ asset('sample-promoters.csv') }}" class="btn btn-sm btn-outline-info" download>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,15 17,10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Sample CSV
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6>Important Notes</h6>
+                    <ul>
+                        <li>Promoter IDs will be automatically generated</li>
+                        <li>Position names must exactly match existing positions</li>
+                        <li>Duplicate phone numbers or ID card numbers will be skipped</li>
+                        <li>Status must be one of: active, inactive, suspended</li>
+                    </ul>
+                </div>
+                
+                <div id="importStatus" class="alert" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCsvImportModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="importBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                    </svg>
+                    Import CSV
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Global modal functions
+function openCsvImportModal() {
+    const modal = document.getElementById('csvImportModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeCsvImportModal() {
+    const modal = document.getElementById('csvImportModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        // Reset form
+        const form = document.getElementById('csvImportForm');
+        const statusDiv = document.getElementById('importStatus');
+        if (form) form.reset();
+        if (statusDiv) statusDiv.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('csvImportForm');
+    const importBtn = document.getElementById('importBtn');
+    const statusDiv = document.getElementById('importStatus');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const fileInput = document.getElementById('csvFile');
+        
+        if (!fileInput.files[0]) {
+            showStatus('Please select a CSV file.', 'danger');
+            return;
+        }
+        
+        // Show loading state
+        importBtn.disabled = true;
+        importBtn.innerHTML = '<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #ffffff; border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; margin-right: 8px;"></span>Importing...';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStatus(`Successfully imported ${data.imported_count} promoters. ${data.skipped_count} rows were skipped.`, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showStatus(data.message || 'Import failed. Please check your CSV file.', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showStatus('An error occurred during import. Please try again.', 'danger');
+        })
+        .finally(() => {
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>Import CSV';
+        });
+    });
+    
+    function showStatus(message, type) {
+        statusDiv.style.display = 'block';
+        statusDiv.textContent = message;
+        statusDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+        statusDiv.style.color = type === 'success' ? '#155724' : '#721c24';
+        statusDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+        statusDiv.style.padding = '0.75rem';
+        statusDiv.style.borderRadius = '4px';
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('csvImportModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCsvImportModal();
+        }
+    });
+});
+
+// Add CSS for spinner animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
 @endsection

@@ -106,6 +106,21 @@
         .register-link a:hover {
             text-decoration: underline;
         }
+
+        .btn-xelenic {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .btn-xelenic:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -136,6 +151,22 @@
 
             <button type="submit" class="btn">Login</button>
         </form>
+
+        <div style="margin: 1.5rem 0; text-align: center; position: relative;">
+            <div style="height: 1px; background-color: #e1e5e9; margin: 0.75rem 0;"></div>
+            <span style="background: white; padding: 0 1rem; color: #666; font-size: 0.9rem;">or</span>
+        </div>
+
+        <a href="{{ route('auth.xelenic') }}" class="btn btn-xelenic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                <path d="M9 12l2 2 4-4"></path>
+                <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+                <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+                <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3"></path>
+                <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3"></path>
+            </svg>
+            Login with Xelenic
+        </a>
 
         <div class="register-link">
             <p>Don't have an account? <a href="{{ route('register') }}">Register here</a></p>

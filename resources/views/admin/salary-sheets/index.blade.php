@@ -32,10 +32,9 @@
                         <tr>
                             <th>Sheet Number</th>
                             <th>Period</th>
-                            <th>Employee</th>
-                            <th>Basic Salary</th>
-                            <th>Total Earnings</th>
-                            <th>Net Salary</th>
+                            <th>Job Information</th>
+                            <th>Items Count</th>
+                            <th>Promoters Count</th>
                             <th>Status</th>
                             <th>Created</th>
                             <th>Actions</th>
@@ -46,30 +45,38 @@
                         <tr>
                             <td>
                                 <span style="background: #1f2937; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: bold; font-size: 0.8rem; font-family: monospace;">
-                                    {{ $sheet->sheet_number }}
+                                    {{ $sheet->sheet_no }}
                                 </span>
                             </td>
                             <td>
-                                <div style="font-weight: 600;">{{ $sheet->month_name }} {{ $sheet->year }}</div>
+                                <div style="font-weight: 600;">{{ $sheet->created_at->format('M Y') }}</div>
                             </td>
                             <td>
                                 <div>
-                                    <div style="font-weight: 500;">{{ $sheet->employee_name }}</div>
-                                    <div style="color: #6b7280; font-size: 0.8rem;">{{ $sheet->employee_type }} - {{ $sheet->employee_id }}</div>
+                                    @if($sheet->job)
+                                        <div style="font-weight: 500;">{{ $sheet->job->job_number ?? 'N/A' }}</div>
+                                        <div style="color: #6b7280; font-size: 0.8rem;">{{ $sheet->job->job_title ?? 'N/A' }}</div>
+                                        @if($sheet->job->client)
+                                            <div style="color: #6b7280; font-size: 0.75rem;">{{ $sheet->job->client->client_name ?? 'N/A' }}</div>
+                                        @endif
+                                    @else
+                                        <div style="color: #6b7280;">No job assigned</div>
+                                    @endif
                                 </div>
                             </td>
                             <td>
-                                <span style="font-weight: 600; color: #059669;">Rs. {{ number_format($sheet->basic_salary, 2) }}</span>
+                                <span style="background: #3b82f6; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: bold; font-size: 0.8rem;">
+                                    {{ $sheet->items_count }}
+                                </span>
                             </td>
                             <td>
-                                <span style="font-weight: 600; color: #2563eb;">Rs. {{ number_format($sheet->total_earnings, 2) }}</span>
-                            </td>
-                            <td>
-                                <span style="font-weight: 600; color: #dc2626;">Rs. {{ number_format($sheet->net_salary, 2) }}</span>
+                                <span style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: bold; font-size: 0.8rem;">
+                                    {{ $sheet->promoters_count }}
+                                </span>
                             </td>
                             <td>
                                 <span class="status-badge status-{{ $sheet->status }}">
-                                    {{ $sheet->status_display }}
+                                    {{ ucfirst($sheet->status) }}
                                 </span>
                             </td>
                             <td>{{ $sheet->created_at->format('M d, Y') }}</td>
@@ -83,16 +90,17 @@
                                             </svg>
                                         </a>
                                     @endcan
-                                    @can('edit salary sheets')
-                                        <a href="{{ route('admin.salary-sheets.edit', $sheet) }}" class="btn btn-sm btn-warning">
+                                    @can('view salary sheets')
+                                        <a href="{{ route('admin.salary-sheets.print', $sheet) }}" target="_blank" class="btn btn-sm btn-primary">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                <polyline points="6,9 6,2 18,2 18,9"></polyline>
+                                                <path d="M6,18H4a2,2 0 0,1 -2,-2V11a2,2 0 0,1 2,-2H20a2,2 0 0,1 2,2v5a2,2 0 0,1 -2,2H18"></path>
+                                                <polyline points="6,14 18,14 18,22 6,22 6,14"></polyline>
                                             </svg>
                                         </a>
                                     @endcan
                                     @can('delete salary sheets')
-                                        <form action="{{ route('admin.salary-sheets.destroy', $sheet) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete salary sheet {{ $sheet->sheet_number }}?')">
+                                        <form action="{{ route('admin.salary-sheets.destroy', $sheet) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete salary sheet {{ $sheet->sheet_no }}?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger">
@@ -201,6 +209,12 @@
     border: none;
 }
 
+.btn-primary {
+    background-color: #8b5cf6;
+    color: white;
+    border: none;
+}
+
 .btn-warning {
     background-color: #f59e0b;
     color: white;
@@ -214,6 +228,7 @@
 }
 
 .btn-info:hover,
+.btn-primary:hover,
 .btn-warning:hover,
 .btn-danger:hover {
     opacity: 0.9;

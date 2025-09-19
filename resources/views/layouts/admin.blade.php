@@ -791,6 +791,7 @@
             </li>
 
             <!-- System Management Group -->
+            @if(auth()->user()->can('view users') || auth()->user()->can('view roles'))
             <li class="menu-group">
                 <div class="menu-group-header">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -801,6 +802,7 @@
                     System Management
                 </div>
                 <ul class="submenu">
+                    @can('view users')
                     <li>
                         <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -810,6 +812,8 @@
                             User Management
                         </a>
                     </li>
+                    @endcan
+                    @can('view roles')
                     <li>
                         <a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -821,10 +825,13 @@
                             Role Management
                         </a>
                     </li>
+                    @endcan
                 </ul>
             </li>
+            @endif
 
             <!-- Business Management Group -->
+            @if(auth()->user()->can('view clients') || auth()->user()->can('view jobs'))
             <li class="menu-group">
                 <div class="menu-group-header">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -834,6 +841,7 @@
                     Business Management
                 </div>
                 <ul class="submenu">
+                    @can('view clients')
                     <li>
                         <a href="{{ route('admin.clients.index') }}" class="{{ request()->routeIs('admin.clients*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -845,6 +853,8 @@
                             Client Management
                         </a>
                     </li>
+                    @endcan
+                    @can('view jobs')
                     <li>
                         <a href="{{ route('admin.jobs.index') }}" class="{{ request()->routeIs('admin.jobs*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -855,10 +865,13 @@
                             Job ID Management
                         </a>
                     </li>
+                    @endcan
                 </ul>
             </li>
+            @endif
 
             <!-- Promoter Management Group -->
+            @if(auth()->user()->can('view promoters') || auth()->user()->can('view promoter positions') || auth()->user()->can('view coordinators'))
             <li class="menu-group">
                 <div class="menu-group-header">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -869,6 +882,7 @@
                     Promoter Management
                 </div>
                 <ul class="submenu">
+                    @can('view promoters')
                     <li>
                         <a href="{{ route('admin.promoters.index') }}" class="{{ request()->routeIs('admin.promoters*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -879,6 +893,8 @@
                             Promoter Details
                         </a>
                     </li>
+                    @endcan
+                    @can('view promoter positions')
                     <li>
                         <a href="{{ route('admin.promoter-positions.index') }}" class="{{ request()->routeIs('admin.promoter-positions*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -889,6 +905,8 @@
                             Promoter Positions
                         </a>
                     </li>
+                    @endcan
+                    @can('view coordinators')
                     <li>
                         <a href="{{ route('admin.coordinators.index') }}" class="{{ request()->routeIs('admin.coordinators*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -900,10 +918,13 @@
                             Coordinator Details
                         </a>
                     </li>
+                    @endcan
                 </ul>
             </li>
+            @endif
 
             <!-- HR Management Group -->
+            @if(auth()->user()->can('view salary sheets') || auth()->user()->can('view salary rules') || auth()->user()->can('view allowances'))
             <li class="menu-group">
                 <div class="menu-group-header">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -914,6 +935,7 @@
                     HR Management
                 </div>
                 <ul class="submenu">
+                    @can('view salary sheets')
                     <li>
                         <a href="{{ route('admin.salary-sheets.index') }}" class="{{ request()->routeIs('admin.salary-sheets*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -924,6 +946,8 @@
                             Salary Sheets
                         </a>
                     </li>
+                    @endcan
+                    @can('view salary rules')
                     <li>
                         <a href="{{ route('admin.position-wise-salary-rules.index') }}" class="{{ request()->routeIs('admin.position-wise-salary-rules*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -934,6 +958,8 @@
                             Salary Rules
                         </a>
                     </li>
+                    @endcan
+                    @can('view allowances')
                     <li>
                         <a href="{{ route('admin.allowances.index') }}" class="{{ request()->routeIs('admin.allowances*') ? 'active' : '' }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -942,8 +968,10 @@
                             Allowances
                         </a>
                     </li>
+                    @endcan
                 </ul>
             </li>
+            @endif
         </ul>
     </div>
 

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Promoter;
 use App\Models\PromoterPosition;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class PromoterController extends Controller
 {
@@ -13,7 +14,7 @@ class PromoterController extends Controller
     {
         $this->middleware('auth');
         $this->middleware('permission:view promoters')->only(['index', 'show']);
-        $this->middleware('permission:create promoters')->only(['create', 'store']);
+        $this->middleware('permission:create promoters')->only(['create', 'store', 'importCsv']);
         $this->middleware('permission:edit promoters')->only(['edit', 'update']);
         $this->middleware('permission:delete promoters')->only(['destroy']);
     }
@@ -131,5 +132,180 @@ class PromoterController extends Controller
 
         return redirect()->route('admin.promoters.index')
             ->with('success', 'Promoter ' . $promoterId . ' deleted successfully.');
+    }
+
+    /**
+     * Import promoters from CSV file
+     */
+    public function importCsv(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'csv_file' => 'required|file|mimes:csv,txt|max:2048'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid file. Please upload a CSV file (max 2MB).'
+                ], 400);
+            }
+
+            $file = $request->file('csv_file');
+            $csvData = $this->parseCsvFile($file);
+            
+            if (empty($csvData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'CSV file is empty or invalid format.'
+                ], 400);
+            }
+
+            $importedCount = 0;
+            $skippedCount = 0;
+            $errors = [];
+
+            foreach ($csvData as $index => $row) {
+                try {
+                    $result = $this->processCsvRow($row, $index + 1);
+                    if ($result['success']) {
+                        $importedCount++;
+                    } else {
+                        $skippedCount++;
+                        $errors[] = "Row " . ($index + 1) . ": " . $result['message'];
+                    }
+                } catch (\Exception $e) {
+                    $skippedCount++;
+                    $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+                }
+            }
+
+            Log::info('CSV Import completed', [
+                'imported_count' => $importedCount,
+                'skipped_count' => $skippedCount,
+                'total_rows' => count($csvData)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'imported_count' => $importedCount,
+                'skipped_count' => $skippedCount,
+                'message' => $importedCount > 0 ? 
+                    "Successfully imported {$importedCount} promoters. {$skippedCount} rows were skipped." :
+                    "No promoters were imported. All rows were skipped due to validation errors.",
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('CSV Import failed', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Parse CSV file and return array of data
+     */
+    private function parseCsvFile($file)
+    {
+        $csvData = [];
+        $handle = fopen($file->getPathname(), 'r');
+        
+        if ($handle === false) {
+            return [];
+        }
+
+        // Get headers
+        $headers = fgetcsv($handle);
+        if (!$headers) {
+            fclose($handle);
+            return [];
+        }
+
+        // Normalize headers (lowercase, trim, replace spaces with underscores)
+        $headers = array_map(function($header) {
+            return strtolower(trim(str_replace(' ', '_', $header)));
+        }, $headers);
+
+        // Read data rows
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) === count($headers)) {
+                $csvData[] = array_combine($headers, $row);
+            }
+        }
+
+        fclose($handle);
+        return $csvData;
+    }
+
+    /**
+     * Process a single CSV row and create promoter
+     */
+    private function processCsvRow($row, $rowNumber)
+    {
+        // Validate required fields
+        $requiredFields = ['promoter_name', 'position_name', 'identity_card_no', 'phone_no', 'bank_name', 'bank_branch_name', 'bank_account_number', 'status'];
+        
+        foreach ($requiredFields as $field) {
+            if (empty($row[$field])) {
+                return [
+                    'success' => false,
+                    'message' => "Missing required field: {$field}"
+                ];
+            }
+        }
+
+        // Validate status
+        $validStatuses = ['active', 'inactive', 'suspended'];
+        if (!in_array(strtolower($row['status']), $validStatuses)) {
+            return [
+                'success' => false,
+                'message' => "Invalid status. Must be one of: " . implode(', ', $validStatuses)
+            ];
+        }
+
+        // Check if promoter already exists (by phone or ID card)
+        $existingPromoter = Promoter::where('phone_no', $row['phone_no'])
+            ->orWhere('identity_card_no', $row['identity_card_no'])
+            ->first();
+
+        if ($existingPromoter) {
+            return [
+                'success' => false,
+                'message' => "Promoter already exists with phone: {$row['phone_no']} or ID card: {$row['identity_card_no']}"
+            ];
+        }
+
+        // Find position by name
+        $position = PromoterPosition::where('position_name', $row['position_name'])->first();
+        if (!$position) {
+            return [
+                'success' => false,
+                'message' => "Position '{$row['position_name']}' not found"
+            ];
+        }
+
+        // Create promoter
+        $promoterData = [
+            'promoter_id' => Promoter::generatePromoterId(),
+            'position_id' => $position->id,
+            'promoter_name' => trim($row['promoter_name']),
+            'identity_card_no' => trim($row['identity_card_no']),
+            'phone_no' => trim($row['phone_no']),
+            'bank_name' => trim($row['bank_name']),
+            'bank_branch_name' => trim($row['bank_branch_name']),
+            'bank_account_number' => trim($row['bank_account_number']),
+            'status' => strtolower(trim($row['status']))
+        ];
+
+        Promoter::create($promoterData);
+
+        return [
+            'success' => true,
+            'message' => "Promoter created successfully"
+        ];
     }
 }

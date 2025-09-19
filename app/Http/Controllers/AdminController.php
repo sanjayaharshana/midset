@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Client;
+use App\Models\Promoter;
+use App\Models\Coordinator;
+use App\Models\Job;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -18,10 +22,10 @@ class AdminController extends Controller
     public function dashboard()
     {
         $stats = [
-            'total_users' => User::count(),
-            'total_roles' => Role::count(),
-            'total_permissions' => Permission::count(),
-            'admin_users' => User::role('admin')->count(),
+            'total_clients' => Client::count(),
+            'total_promoters' => Promoter::count(),
+            'total_coordinators' => Coordinator::count(),
+            'total_campaigns' => Job::count(),
         ];
 
         $recent_users = User::latest()->take(5)->get();

@@ -25,6 +25,21 @@ Route::get('/register', [AuthController::class, 'showRegister'])->name('register
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// OAuth routes
+Route::get('/auth/xelenic', [AuthController::class, 'redirectToXelenic'])->name('auth.xelenic');
+Route::get('/callback', [AuthController::class, 'handleXelenicCallback'])->name('auth.xelenic.callback');
+
+// Debug route for OAuth testing
+Route::get('/debug/oauth', function () {
+    $config = config('services.xelenic');
+    return response()->json([
+        'client_id' => $config['client_id'] ?? 'Not set',
+        'client_secret' => $config['client_secret'] ? 'Set' : 'Not set',
+        'redirect' => $config['redirect'] ?? 'Not set',
+        'base_url' => $config['base_url'] ?? 'Not set',
+    ]);
+});
+
 // Admin routes
 Route::middleware('auth')->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
@@ -45,6 +60,7 @@ Route::middleware('auth')->group(function () {
 
     // Promoter Management routes
     Route::resource('admin/promoters', PromoterController::class)->names('admin.promoters');
+    Route::post('admin/promoters/import-csv', [PromoterController::class, 'importCsv'])->name('admin.promoters.import-csv');
 
     // Promoter Position Management routes
     Route::resource('admin/promoter-positions', PromoterPositionController::class)->names('admin.promoter-positions');
@@ -55,6 +71,7 @@ Route::middleware('auth')->group(function () {
     // Salary Sheet Management routes
     Route::resource('admin/salary-sheets', SalarySheetController::class)->names('admin.salary-sheets');
     Route::get('admin/salary-sheets/by-job/{jobId}', [SalarySheetController::class, 'getByJob'])->name('admin.salary-sheets.by-job');
+    Route::get('admin/salary-sheets/{salarySheet}/print', [SalarySheetController::class, 'print'])->name('admin.salary-sheets.print');
 
     // Position Wise Salary Rules routes
     Route::get('admin/position-wise-salary-rules/get-rules', [PositionWiseSalaryRuleController::class, 'getRules'])->name('admin.position-wise-salary-rules.get-rules');

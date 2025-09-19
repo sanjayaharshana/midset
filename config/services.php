@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'xelenic' => [
+        'client_id' => env('XELENIC_CLIENT_ID'),
+        'client_secret' => env('XELENIC_CLIENT_SECRET'),
+        'redirect' => env('XELENIC_REDIRECT_URI', 'http://localhost:8000/callback'),
+        'base_url' => 'https://xelenic.com',
+    ],
+
 ];

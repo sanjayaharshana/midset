@@ -58,7 +58,7 @@ class UserManagementController extends Controller
     public function edit(User $user)
     {
         $roles = Role::all();
-        $userRoles = $user->roles->pluck('id')->toArray();
+        $userRoles = $user->roles->pluck('name')->toArray();
         return view('admin.users.edit', compact('user', 'roles', 'userRoles'));
     }
 
