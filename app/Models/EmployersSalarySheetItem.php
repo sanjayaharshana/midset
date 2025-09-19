@@ -15,6 +15,7 @@ class EmployersSalarySheetItem extends Model
         'no',
         'location',
         'position_id',
+        'promoter_id',
         'attendance_data',
         'payment_data',
         'coordinator_details',
@@ -63,6 +64,14 @@ class EmployersSalarySheetItem extends Model
     public function position()
     {
         return $this->belongsTo(PromoterPosition::class, 'position_id');
+    }
+
+    /**
+     * Get the promoter
+     */
+    public function promoter()
+    {
+        return $this->belongsTo(Promoter::class, 'promoter_id');
     }
 
     /**
