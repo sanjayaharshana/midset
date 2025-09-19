@@ -4229,6 +4229,14 @@ document.addEventListener('click', function(e) {
         // Initialize horizontal scroll when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             initializeHorizontalScroll();
+            
+            // Initialize Select2 for job dropdown
+            $('#job_id').select2({
+                placeholder: 'Select Job',
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('body') // Ensure dropdown appears above other elements
+            });
         });
 
         // Debug function to manually check expenses calculation

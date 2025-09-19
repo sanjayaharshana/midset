@@ -8,6 +8,13 @@
     
     <!-- SweetAlert2 CSS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -767,6 +774,93 @@
                 font-size: 0.8rem !important;
                 text-align: center !important;
             }
+        }
+
+        /* Select2 Custom Styling */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            background-color: #ffffff !important;
+            padding: 0.75rem 1rem !important;
+            font-size: 0.875rem !important;
+            font-weight: 400 !important;
+            line-height: 1.5 !important;
+            color: #374151 !important;
+        }
+
+        .select2-container--default .select2-selection--single:focus {
+            border-color: #3b82f6 !important;
+            outline: 0 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #374151 !important;
+            line-height: 28px !important;
+            padding-left: 0 !important;
+            padding-right: 20px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #9ca3af !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+            right: 8px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #6b7280 transparent transparent transparent !important;
+            border-style: solid !important;
+            border-width: 5px 4px 0 4px !important;
+            height: 0 !important;
+            left: 50% !important;
+            margin-left: -4px !important;
+            margin-top: -2px !important;
+            position: absolute !important;
+            top: 50% !important;
+            width: 0 !important;
+        }
+
+        .select2-dropdown {
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.875rem !important;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field:focus {
+            border-color: #3b82f6 !important;
+            outline: 0 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        .select2-container--default .select2-results__option {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.875rem !important;
+            color: #374151 !important;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: #f3f4f6 !important;
+            color: #1f2937 !important;
         }
     </style>
 </head>

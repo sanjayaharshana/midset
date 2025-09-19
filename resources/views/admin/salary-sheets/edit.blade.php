@@ -217,6 +217,14 @@
 <script>
 // Initialize with existing data
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2 for job dropdown
+    $('#job_id').select2({
+        placeholder: 'Select Job',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('body') // Ensure dropdown appears above other elements
+    });
+    
     // Set up the job and load existing data
     const jobSelect = document.getElementById('job_id');
     if (jobSelect.value) {
