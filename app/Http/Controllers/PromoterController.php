@@ -132,7 +132,94 @@ class PromoterController extends Controller
      */
     public function show(Promoter $promoter)
     {
-        return view('admin.promoters.show', compact('promoter'));
+        // Load promoter with position
+        $promoter->load('position');
+
+        // Get all salary sheet items where this promoter appears
+        $salarySheetItems = \App\Models\EmployersSalarySheetItem::whereJsonContains('attendance_data->promoter_id', $promoter->id)
+            ->with(['salarySheet.job.client', 'position'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate earnings summary from actual database records
+        $earningsSummary = $this->calculateEarningsFromDatabase($promoter, $salarySheetItems);
+
+        // Group salary sheets by month/year for better organization
+        $salarySheetsByMonth = $salarySheetItems->groupBy(function ($item) {
+            return $item->salarySheet->created_at->format('Y-m');
+        });
+
+        // Get recent activity (last 6 months)
+        $recentActivity = $salarySheetItems->take(10);
+
+        return view('admin.promoters.show', compact('promoter', 'salarySheetItems', 'earningsSummary', 'salarySheetsByMonth', 'recentActivity'));
+    }
+
+    /**
+     * Calculate earnings summary from actual database tables
+     */
+    private function calculateEarningsFromDatabase($promoter, $salarySheetItems)
+    {
+        // Initialize totals
+        $totals = [
+            'total_salary_sheets' => 0,
+            'total_attendance_amount' => 0,
+            'total_net_amount' => 0,
+            'total_food_allowance' => 0,
+            'total_expenses' => 0,
+            'total_accommodation_allowance' => 0,
+            'total_coordination_fee' => 0,
+            'total_attendance_days' => 0,
+            'total_basic_amount' => 0,
+            'total_hold_amount' => 0,
+        ];
+
+        // Process each salary sheet item
+        foreach ($salarySheetItems as $item) {
+            $totals['total_salary_sheets']++;
+
+            // Get attendance data from JSON
+            $attendanceData = $item->attendance_data ?? [];
+            $paymentData = $item->payment_data ?? [];
+            $coordinatorData = $item->coordinator_details ?? [];
+
+            // Calculate attendance totals
+            $totals['total_attendance_days'] += $attendanceData['total'] ?? 0;
+            $totals['total_attendance_amount'] += $attendanceData['amount'] ?? 0;
+
+            // Calculate payment totals
+            $totals['total_net_amount'] += $paymentData['net_amount'] ?? 0;
+            $totals['total_food_allowance'] += $paymentData['food_allowance'] ?? 0;
+            $totals['total_expenses'] += $paymentData['expenses'] ?? 0;
+            $totals['total_accommodation_allowance'] += $paymentData['accommodation_allowance'] ?? 0;
+            $totals['total_hold_amount'] += $paymentData['hold_for_weeks'] ?? 0;
+
+            // Calculate coordinator fees
+            $totals['total_coordination_fee'] += $coordinatorData['amount'] ?? 0;
+
+            // Calculate basic amount (attendance amount - expenses - coordination fee)
+            $basicAmount = ($attendanceData['amount'] ?? 0) - ($paymentData['expenses'] ?? 0) - ($coordinatorData['amount'] ?? 0);
+            $totals['total_basic_amount'] += max(0, $basicAmount);
+        }
+
+        // Get additional statistics from database
+        $totals['unique_jobs'] = $salarySheetItems->pluck('job_id')->unique()->count();
+        $totals['unique_positions'] = $salarySheetItems->pluck('position_id')->unique()->count();
+        $totals['total_salary_sheets_paid'] = $salarySheetItems->where('salarySheet.status', 'paid')->count();
+        $totals['total_salary_sheets_approved'] = $salarySheetItems->where('salarySheet.status', 'approved')->count();
+        $totals['total_salary_sheets_draft'] = $salarySheetItems->where('salarySheet.status', 'draft')->count();
+
+        // Calculate average earnings per day
+        $totals['average_earnings_per_day'] = $totals['total_attendance_days'] > 0 
+            ? $totals['total_net_amount'] / $totals['total_attendance_days'] 
+            : 0;
+
+        // Calculate average earnings per salary sheet
+        $totals['average_earnings_per_sheet'] = $totals['total_salary_sheets'] > 0 
+            ? $totals['total_net_amount'] / $totals['total_salary_sheets'] 
+            : 0;
+
+        return $totals;
     }
 
     /**
