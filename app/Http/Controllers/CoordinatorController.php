@@ -20,10 +20,54 @@ class CoordinatorController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $coordinators = Coordinator::latest()->paginate(10);
-        return view('admin.coordinators.index', compact('coordinators'));
+        $query = Coordinator::query();
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('coordinator_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('coordinator_id', 'like', "%{$searchTerm}%")
+                  ->orWhere('nic_no', 'like', "%{$searchTerm}%")
+                  ->orWhere('phone_no', 'like', "%{$searchTerm}%")
+                  ->orWhere('bank_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('account_number', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        $allowedSortFields = ['coordinator_name', 'coordinator_id', 'created_at', 'status'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest();
+        }
+
+        $coordinators = $query->paginate(20)->withQueryString();
+
+        // Get filter options
+        $statuses = ['active', 'inactive', 'suspended'];
+
+        return view('admin.coordinators.index', compact('coordinators', 'statuses'));
     }
 
     /**

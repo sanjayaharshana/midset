@@ -39,6 +39,118 @@
         </div>
     </div>
     <div class="card-body">
+        <!-- Search and Filter Bar -->
+        <div class="search-filter-bar" style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #e2e8f0;">
+            <form method="GET" action="{{ route('admin.promoters.index') }}" id="searchFilterForm">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <!-- Search Input -->
+                    <div>
+                        <label for="search" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">Search</label>
+                        <div style="position: relative;">
+                            <input type="text" 
+                                   id="search" 
+                                   name="search" 
+                                   value="{{ request('search') }}" 
+                                   placeholder="Search promoters..." 
+                                   style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #6b7280;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="M21 21l-4.35-4.35"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Position Filter -->
+                    <div>
+                        <label for="position" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">Position</label>
+                        <select id="position" name="position" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                            <option value="">All Positions</option>
+                            @foreach($positions as $position)
+                                <option value="{{ $position->id }}" {{ request('position') == $position->id ? 'selected' : '' }}>
+                                    {{ $position->position_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div>
+                        <label for="status" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">Status</label>
+                        <select id="status" name="status" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                            <option value="">All Status</option>
+                            @foreach($statuses as $status)
+                                <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
+                                    {{ ucfirst($status) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Sort By -->
+                    <div>
+                        <label for="sort_by" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">Sort By</label>
+                        <select id="sort_by" name="sort_by" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                            <option value="created_at" {{ request('sort_by') == 'created_at' ? 'selected' : '' }}>Created Date</option>
+                            <option value="promoter_name" {{ request('sort_by') == 'promoter_name' ? 'selected' : '' }}>Name</option>
+                            <option value="promoter_id" {{ request('sort_by') == 'promoter_id' ? 'selected' : '' }}>Promoter ID</option>
+                            <option value="status" {{ request('sort_by') == 'status' ? 'selected' : '' }}>Status</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Date Range Filters -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label for="date_from" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">From Date</label>
+                        <input type="date" 
+                               id="date_from" 
+                               name="date_from" 
+                               value="{{ request('date_from') }}" 
+                               style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                    </div>
+                    <div>
+                        <label for="date_to" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">To Date</label>
+                        <input type="date" 
+                               id="date_to" 
+                               name="date_to" 
+                               value="{{ request('date_to') }}" 
+                               style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                    </div>
+                    <div>
+                        <label for="sort_order" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; font-size: 0.875rem;">Order</label>
+                        <select id="sort_order" name="sort_order" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; background: white;">
+                            <option value="desc" {{ request('sort_order') == 'desc' ? 'selected' : '' }}>Descending</option>
+                            <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>Ascending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <button type="submit" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        Search & Filter
+                    </button>
+                    <a href="{{ route('admin.promoters.index') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
+                        Clear Filters
+                    </a>
+                    @if(request()->hasAny(['search', 'position', 'status', 'date_from', 'date_to', 'sort_by', 'sort_order']))
+                        <div style="margin-left: auto; padding: 0.5rem 1rem; background: #dbeafe; color: #1e40af; border-radius: 6px; font-size: 0.875rem; font-weight: 500;">
+                            {{ $promoters->total() }} result(s) found
+                        </div>
+                    @endif
+                </div>
+            </form>
+        </div>
+
         @if($promoters->count() > 0)
             <div class="table-responsive">
                 <table class="table">
@@ -704,7 +816,72 @@ style.textContent = `
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
+    
+    /* Search and Filter Bar Styles */
+    .search-filter-bar input:focus,
+    .search-filter-bar select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .search-filter-bar .btn {
+        transition: all 0.15s ease-in-out;
+    }
+    
+    .search-filter-bar .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
 `;
 document.head.appendChild(style);
+
+// Search and Filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('searchFilterForm');
+    const searchInput = document.getElementById('search');
+    const positionSelect = document.getElementById('position');
+    const statusSelect = document.getElementById('status');
+    const sortBySelect = document.getElementById('sort_by');
+    const sortOrderSelect = document.getElementById('sort_order');
+    
+    // Auto-submit on select changes (with debounce for search)
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            form.submit();
+        }, 500); // 500ms delay for search
+    });
+    
+    // Immediate submit for select changes
+    [positionSelect, statusSelect, sortBySelect, sortOrderSelect].forEach(select => {
+        select.addEventListener('change', function() {
+            form.submit();
+        });
+    });
+    
+    // Date inputs
+    const dateFromInput = document.getElementById('date_from');
+    const dateToInput = document.getElementById('date_to');
+    
+    [dateFromInput, dateToInput].forEach(input => {
+        input.addEventListener('change', function() {
+            form.submit();
+        });
+    });
+    
+    // Clear filters functionality
+    const clearButton = document.querySelector('a[href="{{ route('admin.promoters.index') }}"]');
+    if (clearButton) {
+        clearButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Clear all form inputs
+            form.reset();
+            // Submit the form to clear filters
+            form.submit();
+        });
+    }
+});
 </script>
 @endsection
