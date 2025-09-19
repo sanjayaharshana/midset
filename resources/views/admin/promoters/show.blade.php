@@ -403,7 +403,7 @@
                             <td>
                                 <div style="display: flex; gap: 8px;">
                                     @can('view salary sheets')
-                                        <a href="{{ route('admin.salary-sheets.show', $item->salarySheet) }}" class="btn btn-sm btn-info">
+                                        <a href="{{ route('admin.salary-sheets.show', $item->salarySheet) }}" class="btn btn-sm btn-info" title="View Salary Sheet">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                                 <circle cx="12" cy="12" r="3"></circle>
@@ -411,11 +411,20 @@
                                         </a>
                                     @endcan
                                     @can('view salary sheets')
-                                        <a href="{{ route('admin.salary-sheets.print', $item->salarySheet) }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <a href="{{ route('admin.salary-sheets.print', $item->salarySheet) }}" target="_blank" class="btn btn-sm btn-primary" title="Print Full Salary Sheet">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="6,9 6,2 18,2 18,9"></polyline>
                                                 <path d="M6,18H4a2,2 0 0,1 -2,-2V11a2,2 0 0,1 2,-2H20a2,2 0 0,1 2,2v5a2,2 0 0,1 -2,2H18"></path>
                                                 <polyline points="6,14 18,14 18,22 6,22 6,14"></polyline>
+                                            </svg>
+                                        </a>
+                                    @endcan
+                                    @can('view salary sheets')
+                                        <a href="{{ route('admin.promoters.salary-slip.print', ['promoter' => $promoter->id, 'itemId' => $item->id]) }}" target="_blank" class="btn btn-sm btn-success" title="Print Individual Salary Slip">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                                <path d="M16 10a4 4 0 0 1-8 0"></path>
                                             </svg>
                                         </a>
                                     @endcan
@@ -654,8 +663,15 @@
     border: none;
 }
 
+.btn-success {
+    background-color: #10b981;
+    color: white;
+    border: none;
+}
+
 .btn-info:hover,
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-success:hover {
     opacity: 0.9;
     transform: translateY(-1px);
 }

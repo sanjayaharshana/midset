@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     // Promoter Management routes
     Route::resource('admin/promoters', PromoterController::class)->names('admin.promoters');
     Route::post('admin/promoters/import-csv', [PromoterController::class, 'importCsv'])->name('admin.promoters.import-csv');
+    Route::get('admin/promoters/{promoter}/salary-slip/{itemId}/print', [PromoterController::class, 'printSalarySlip'])->name('admin.promoters.salary-slip.print');
 
     // Promoter Position Management routes
     Route::resource('admin/promoter-positions', PromoterPositionController::class)->names('admin.promoter-positions');

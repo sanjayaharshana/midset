@@ -32,7 +32,23 @@
 <!-- Main Content Grid -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
     
-    <!-- Recent Users -->
+    <!-- Campaign Count Graph (Last 6 Months) -->
+    <div class="card">
+        <div class="card-header">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <path d="M3 3v18h18"></path>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
+                </svg>
+                Campaign Count (Last 6 Months)
+            </h3>
+        </div>
+        <div class="card-body">
+            <canvas id="campaignChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Registered Promoters Count Graph (Last 6 Months) -->
     <div class="card">
         <div class="card-header">
             <h3>
@@ -40,127 +56,11 @@
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                Recent Users
+                Registered Promoters (Last 6 Months)
             </h3>
         </div>
         <div class="card-body">
-            @if($recent_users->count() > 0)
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($recent_users as $user)
-                            <tr>
-                                <td>
-                                    <div style="display: flex; align-items: center;">
-                                        <div style="width: 32px; height: 32px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px; font-weight: bold; font-size: 0.8rem;">
-                                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                                        </div>
-                                        {{ $user->name }}
-                                    </div>
-                                </td>
-                                <td>{{ $user->email }}</td>
-                                <td>{{ $user->created_at->format('M d, Y') }}</td>
-                                <td>
-                                    <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-info">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                <div style="text-align: center; margin-top: 1rem;">
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-primary">View All Users</a>
-                </div>
-            @else
-                <div style="text-align: center; padding: 2rem; color: #6b7280;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; opacity: 0.5;">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <p>No users found</p>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    <!-- Roles Overview -->
-    <div class="card">
-        <div class="card-header">
-            <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                Roles Overview
-            </h3>
-        </div>
-        <div class="card-body">
-            @if($roles->count() > 0)
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Role Name</th>
-                                <th>Users Count</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($roles as $role)
-                            <tr>
-                                <td>
-                                    <div style="display: flex; align-items: center;">
-                                        <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 8px;"></div>
-                                        {{ $role->name }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span style="background: #f3f4f6; color: #374151; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600;">
-                                        {{ $role->users_count }} users
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="{{ route('admin.roles.show', $role) }}" class="btn btn-sm btn-info">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                <div style="text-align: center; margin-top: 1rem;">
-                    <a href="{{ route('admin.roles.index') }}" class="btn btn-primary">View All Roles</a>
-                </div>
-            @else
-                <div style="text-align: center; padding: 2rem; color: #6b7280;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; opacity: 0.5;">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    <p>No roles found</p>
-                </div>
-            @endif
+            <canvas id="promotersChart" width="400" height="200"></canvas>
         </div>
     </div>
 </div>
@@ -282,5 +182,121 @@
         grid-template-columns: 1fr !important;
     }
 }
+
+/* Chart styling */
+.card-body canvas {
+    max-height: 300px;
+    width: 100% !important;
+    height: 300px !important;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
 </style>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Campaign Chart
+    const campaignCtx = document.getElementById('campaignChart').getContext('2d');
+    new Chart(campaignCtx, {
+        type: 'line',
+        data: {
+            labels: {!! json_encode($campaignData['labels']) !!},
+            datasets: [{
+                label: 'Campaigns',
+                data: {!! json_encode($campaignData['data']) !!},
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    hoverBackgroundColor: '#3b82f6'
+                }
+            }
+        }
+    });
+
+    // Promoters Chart
+    const promotersCtx = document.getElementById('promotersChart').getContext('2d');
+    new Chart(promotersCtx, {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode($promotersData['labels']) !!},
+            datasets: [{
+                label: 'Promoters',
+                data: {!! json_encode($promotersData['data']) !!},
+                backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 @endsection

@@ -132,11 +132,12 @@ class PromoterController extends Controller
      */
     public function show(Promoter $promoter)
     {
+    
         // Load promoter with position
         $promoter->load('position');
 
         // Get all salary sheet items where this promoter appears
-        $salarySheetItems = \App\Models\EmployersSalarySheetItem::whereJsonContains('attendance_data->promoter_id', $promoter->id)
+        $salarySheetItems = \App\Models\EmployersSalarySheetItem::where('promoter_id', $promoter->id)
             ->with(['salarySheet.job.client', 'position'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -444,5 +445,27 @@ class PromoterController extends Controller
             'success' => true,
             'message' => "Promoter created successfully"
         ];
+    }
+
+    /**
+     * Print individual salary slip for a promoter
+     */
+    public function printSalarySlip(Promoter $promoter, $itemId)
+    {
+        // Find the salary sheet item
+        $item = \App\Models\EmployersSalarySheetItem::where('id', $itemId)
+            ->where('promoter_id', $promoter->id)
+            ->with(['salarySheet.job.client', 'position'])
+            ->first();
+
+        if (!$item) {
+            abort(404, 'Salary sheet item not found');
+        }
+
+        // Load the salary sheet with job and client
+        $salarySheet = $item->salarySheet;
+        $salarySheet->load(['job.client']);
+
+        return view('admin.promoters.salary-slip-print', compact('promoter', 'item', 'salarySheet'));
     }
 }
