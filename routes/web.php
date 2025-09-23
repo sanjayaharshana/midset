@@ -13,6 +13,7 @@ use App\Http\Controllers\CoordinatorController;
 use App\Http\Controllers\SalarySheetController;
 use App\Http\Controllers\PositionWiseSalaryRuleController;
 use App\Http\Controllers\AllowanceController;
+use App\Http\Controllers\ReporterController;
 
 // Public routes
 Route::get('/', function () {
@@ -81,6 +82,9 @@ Route::middleware('auth')->group(function () {
 
     // Allowance Management routes
     Route::resource('admin/allowances', AllowanceController::class)->names('admin.allowances');
+
+    // Reporter Management routes
+    Route::resource('admin/reporters', ReporterController::class)->names('admin.reporters');
 
     Route::post('admin/salary-sheet-enforce',[SalarySheetController::class,'enforce'])->name('admin.salary.enforce');
     

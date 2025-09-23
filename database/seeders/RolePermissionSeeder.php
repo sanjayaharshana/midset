@@ -79,6 +79,12 @@ class RolePermissionSeeder extends Seeder
             
             // Admin Panel
             'access admin panel',
+            
+            // Reporter Management
+            'view reporters',
+            'create reporters',
+            'edit reporters',
+            'delete reporters',
         ];
 
         foreach ($permissions as $permission) {
@@ -116,8 +122,18 @@ class RolePermissionSeeder extends Seeder
             'view allowances',
             'create allowances',
             'edit allowances',
+            'view reporters',
+            'create reporters',
+            'edit reporters',
+            'delete reporters',
             'view dashboard',
             'access admin panel',
+        ]);
+
+        $reporterRole = Role::firstOrCreate(['name' => 'reporter']);
+        $reporterRole->syncPermissions([
+            'view dashboard',
+            'view reporters',
         ]);
 
         $userRole = Role::firstOrCreate(['name' => 'user']);
@@ -144,6 +160,17 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $managerUser->assignRole('manager');
+
+        // Create reporter user
+        $reporterUser = User::firstOrCreate(
+            ['email' => 'reporter@mindpark.com'],
+            [
+                'name' => 'Reporter User',
+                'password' => Hash::make('password123'),
+                'xelenic_id' => 'REP001',
+            ]
+        );
+        $reporterUser->assignRole('reporter');
 
         // Create regular user
         $regularUser = User::firstOrCreate(
