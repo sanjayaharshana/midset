@@ -65,10 +65,10 @@
                                 </div>
                             </td>
                             <td>
-                                @if($job->officer_name)
-                                    <div style="font-weight: 500;">{{ $job->officer_name }}</div>
-                                    @if($job->reporter_officer_name)
-                                        <div style="font-size: 0.8rem; color: #6b7280;">Reporter: {{ $job->reporter_officer_name }}</div>
+                                @if($job->officer)
+                                    <div style="font-weight: 500;">{{ $job->officer->name }}</div>
+                                    @if($job->reporter)
+                                        <div style="font-size: 0.8rem; color: #6b7280;">Reporter: {{ $job->reporter->name }}</div>
                                     @endif
                                 @else
                                     <span style="color: #9ca3af;">Not assigned</span>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Job;
 use App\Models\Client;
+use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 
 class JobController extends Controller
@@ -23,7 +24,7 @@ class JobController extends Controller
      */
     public function index()
     {
-        $jobs = Job::with('client')->latest()->paginate(10);
+        $jobs = Job::with(['client', 'officer', 'reporter'])->latest()->paginate(10);
         return view('admin.jobs.index', compact('jobs'));
     }
 
@@ -33,7 +34,9 @@ class JobController extends Controller
     public function create()
     {
         $clients = Client::where('status', 'active')->orderBy('name')->get();
-        return view('admin.jobs.create', compact('clients'));
+        $officers = User::role('officer')->orderBy('name')->get();
+        $reporters = User::role('reporter')->orderBy('name')->get();
+        return view('admin.jobs.create', compact('clients', 'officers', 'reporters'));
     }
 
     /**
@@ -45,8 +48,8 @@ class JobController extends Controller
             'job_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'client_id' => 'required|exists:clients,id',
-            'officer_name' => 'nullable|string|max:255',
-            'reporter_officer_name' => 'nullable|string|max:255',
+            'officer_id' => 'nullable|exists:users,id',
+            'reporter_id' => 'nullable|exists:users,id',
             'status' => 'required|in:pending,in_progress,completed,cancelled',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -81,7 +84,7 @@ class JobController extends Controller
      */
     public function show(Job $job)
     {
-        $job->load('client');
+        $job->load(['client', 'officer', 'reporter']);
         return view('admin.jobs.show', compact('job'));
     }
 
@@ -91,7 +94,9 @@ class JobController extends Controller
     public function edit(Job $job)
     {
         $clients = Client::where('status', 'active')->orderBy('name')->get();
-        return view('admin.jobs.edit', compact('job', 'clients'));
+        $officers = User::role('officer')->orderBy('name')->get();
+        $reporters = User::role('reporter')->orderBy('name')->get();
+        return view('admin.jobs.edit', compact('job', 'clients', 'officers', 'reporters'));
     }
 
     /**
@@ -103,8 +108,8 @@ class JobController extends Controller
             'job_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'client_id' => 'required|exists:clients,id',
-            'officer_name' => 'nullable|string|max:255',
-            'reporter_officer_name' => 'nullable|string|max:255',
+            'officer_id' => 'nullable|exists:users,id',
+            'reporter_id' => 'nullable|exists:users,id',
             'status' => 'required|in:pending,in_progress,completed,cancelled',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',

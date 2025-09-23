@@ -15,6 +15,7 @@ use App\Http\Controllers\PositionWiseSalaryRuleController;
 use App\Http\Controllers\AllowanceController;
 use App\Http\Controllers\ReporterController;
 use App\Http\Controllers\OfficerController;
+use App\Http\Controllers\SettingsController;
 
 // Public routes
 Route::get('/', function () {
@@ -89,6 +90,19 @@ Route::middleware('auth')->group(function () {
 
     // Officer Management routes
     Route::resource('admin/officers', OfficerController::class)->names('admin.officers');
+
+    // Settings Management routes
+    Route::get('admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
+    Route::put('admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
+    Route::get('admin/settings/group/{group}', [SettingsController::class, 'getByGroup'])->name('admin.settings.group');
+    Route::get('admin/settings/get/{key}', [SettingsController::class, 'get'])->name('admin.settings.get');
+    
+    // Dynamic Settings API routes
+    Route::post('admin/settings/create', [SettingsController::class, 'create'])->name('admin.settings.create');
+    Route::delete('admin/settings/{key}', [SettingsController::class, 'destroy'])->name('admin.settings.destroy');
+    Route::get('admin/settings/search', [SettingsController::class, 'search'])->name('admin.settings.search');
+    Route::get('admin/settings/export', [SettingsController::class, 'export'])->name('admin.settings.export');
+    Route::post('admin/settings/import', [SettingsController::class, 'import'])->name('admin.settings.import');
 
     Route::post('admin/salary-sheet-enforce',[SalarySheetController::class,'enforce'])->name('admin.salary.enforce');
     

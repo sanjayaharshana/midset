@@ -59,19 +59,33 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <div class="form-group">
-                    <label for="officer_name" class="form-label">Officer Name</label>
-                    <input type="text" class="form-control @error('officer_name') is-invalid @enderror" 
-                           id="officer_name" name="officer_name" value="{{ old('officer_name', $job->officer_name) }}">
-                    @error('officer_name')
+                    <label for="officer_id" class="form-label">Officer</label>
+                    <select class="form-control @error('officer_id') is-invalid @enderror" 
+                            id="officer_id" name="officer_id">
+                        <option value="">Select Officer</option>
+                        @foreach($officers as $officer)
+                            <option value="{{ $officer->id }}" {{ old('officer_id', $job->officer_id) == $officer->id ? 'selected' : '' }}>
+                                {{ $officer->name }} ({{ $officer->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('officer_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="form-group">
-                    <label for="reporter_officer_name" class="form-label">Reporter Officer Name</label>
-                    <input type="text" class="form-control @error('reporter_officer_name') is-invalid @enderror" 
-                           id="reporter_officer_name" name="reporter_officer_name" value="{{ old('reporter_officer_name', $job->reporter_officer_name) }}">
-                    @error('reporter_officer_name')
+                    <label for="reporter_id" class="form-label">Reporter</label>
+                    <select class="form-control @error('reporter_id') is-invalid @enderror" 
+                            id="reporter_id" name="reporter_id">
+                        <option value="">Select Reporter</option>
+                        @foreach($reporters as $reporter)
+                            <option value="{{ $reporter->id }}" {{ old('reporter_id', $job->reporter_id) == $reporter->id ? 'selected' : '' }}>
+                                {{ $reporter->name }} ({{ $reporter->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('reporter_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

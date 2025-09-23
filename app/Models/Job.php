@@ -19,6 +19,8 @@ class Job extends Model
         'client_id',
         'officer_name',
         'reporter_officer_name',
+        'officer_id',
+        'reporter_id',
         'status',
         'start_date',
         'end_date',
@@ -46,6 +48,22 @@ class Job extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /**
+     * Get the officer assigned to the job.
+     */
+    public function officer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'officer_id');
+    }
+
+    /**
+     * Get the reporter assigned to the job.
+     */
+    public function reporter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reporter_id');
     }
 
     /**

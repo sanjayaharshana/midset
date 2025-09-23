@@ -91,6 +91,10 @@ class RolePermissionSeeder extends Seeder
             'create officers',
             'edit officers',
             'delete officers',
+            
+            // Settings Management
+            'view settings',
+            'edit settings',
         ];
 
         foreach ($permissions as $permission) {
@@ -136,6 +140,8 @@ class RolePermissionSeeder extends Seeder
             'create officers',
             'edit officers',
             'delete officers',
+            'view settings',
+            'edit settings',
             'view dashboard',
             'access admin panel',
         ]);
