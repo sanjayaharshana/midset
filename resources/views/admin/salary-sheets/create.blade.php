@@ -15,55 +15,81 @@
     {{csrf_field()}}
     <div class="card">
         <div class="card-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="header-title">
                 <h3>Salary Sheet Management</h3>
-                <div style="display: flex; gap: 1rem;">
-                    <button type="button" id="addPromoterBtn" class="btn btn-success" onclick="addPromoterRow()" disabled>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Add Promoter Row
-                    </button>
-                    <button type="button" id="salaryRuleBtn" class="btn btn-info" onclick="openSalaryRuleModal()" disabled>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                        </svg>
-                        Position Wise Salary Rule
-                    </button>
-                    <button type="button" id="allowanceRuleBtn" class="btn btn-warning" onclick="openAllowanceRuleModal()" disabled>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                        </svg>
-                        Add Allowance Rule
-                    </button>
-                    <button type="button" class="btn btn-info" onclick="openJobSettingsModal()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
-                        </svg>
-                        Job Settings
-                    </button>
-                    <button type="button" class="btn btn-warning"  onclick="pullExistingData()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14,2 14,8 20,8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10,9 9,9 8,9"></polyline>
-                        </svg>
-                        Pull Data
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="saveSalarySheet()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                            <polyline points="17,21 17,13 7,13 7,21"></polyline>
-                            <polyline points="7,3 7,8 15,8"></polyline>
-                        </svg>
-                        Save Salary Sheet
-                    </button>
+                <p class="header-subtitle">Create and manage salary sheets for your organization</p>
+            </div>
+        </div>
+        
+        <!-- Professional Toolbar Section -->
+        <div class="toolbar-section">
+            <div class="toolbar-container">
+                <div class="toolbar-group primary-tools">
+                    <div class="toolbar-label">Primary Actions</div>
+                    <div class="toolbar-buttons">
+                        <button type="button" id="addPromoterBtn" class="toolbar-btn toolbar-btn-success" onclick="addPromoterRow()" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add Promoter Row</span>
+                        </button>
+                        <button type="button" class="toolbar-btn toolbar-btn-primary" onclick="saveSalarySheet()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                                <polyline points="7,3 7,8 15,8"></polyline>
+                            </svg>
+                            <span>Save Salary Sheet</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="toolbar-divider"></div>
+                
+                <div class="toolbar-group secondary-tools">
+                    <div class="toolbar-label">Configuration</div>
+                    <div class="toolbar-buttons">
+                        <button type="button" id="salaryRuleBtn" class="toolbar-btn toolbar-btn-info" onclick="openSalaryRuleModal()" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                            </svg>
+                            <span>Salary Rules</span>
+                        </button>
+                        <button type="button" id="allowanceRuleBtn" class="toolbar-btn toolbar-btn-warning" onclick="openAllowanceRuleModal()" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                            </svg>
+                            <span>Allowance Rules</span>
+                        </button>
+                        <button type="button" class="toolbar-btn toolbar-btn-secondary" onclick="openJobSettingsModal()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                            </svg>
+                            <span>Job Settings</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="toolbar-divider"></div>
+                
+                <div class="toolbar-group utility-tools">
+                    <div class="toolbar-label">Utilities</div>
+                    <div class="toolbar-buttons">
+                        <button type="button" class="toolbar-btn toolbar-btn-outline" onclick="pullExistingData()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10,9 9,9 8,9"></polyline>
+                            </svg>
+                            <span>Pull Data</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -467,6 +493,365 @@
 </div>
 
 <style>
+/* Professional Header Styles */
+.header-title h3 {
+    margin: 0 0 0.5rem 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.header-subtitle {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* Professional Toolbar Section */
+.toolbar-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem 0;
+    margin: 0;
+}
+
+.toolbar-container {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    max-width: 100%;
+    padding-left: 1.5rem;
+}
+
+.toolbar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.toolbar-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.toolbar-buttons {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 3rem;
+    background: linear-gradient(to bottom, transparent, #cbd5e1, transparent);
+    flex-shrink: 0;
+}
+
+/* Professional Toolbar Button Styles */
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-height: 2.75rem;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid transparent;
+}
+
+.toolbar-btn:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.toolbar-btn:hover:before {
+    left: 100%;
+}
+
+.toolbar-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-btn svg {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.toolbar-btn:hover svg {
+    transform: scale(1.1);
+}
+
+.toolbar-btn span {
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.btn-modern:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-modern:hover:before {
+    left: 100%;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-modern:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.btn-modern:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.btn-modern:disabled:hover {
+    transform: none;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.btn-modern svg {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.btn-modern:hover svg {
+    transform: scale(1.1);
+}
+
+.btn-modern span {
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+/* Toolbar Button Color Variants */
+.toolbar-btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border-color: #2563eb;
+}
+
+.toolbar-btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
+}
+
+.toolbar-btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-color: #059669;
+}
+
+.toolbar-btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-color: #047857;
+}
+
+.toolbar-btn-info {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: white;
+    border-color: #0891b2;
+}
+
+.toolbar-btn-info:hover {
+    background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    border-color: #0e7490;
+}
+
+.toolbar-btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border-color: #d97706;
+}
+
+.toolbar-btn-warning:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    border-color: #b45309;
+}
+
+.toolbar-btn-secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    color: white;
+    border-color: #4b5563;
+}
+
+.toolbar-btn-secondary:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    border-color: #374151;
+}
+
+.toolbar-btn-outline {
+    background: white;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-btn-outline:hover {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #94a3b8;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Responsive Design for Toolbar */
+@media (max-width: 1200px) {
+    .toolbar-container {
+        gap: 1.5rem;
+    }
+    
+    .toolbar-divider {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-title h3 {
+        font-size: 1.25rem;
+    }
+    
+    .header-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .toolbar-section {
+        padding: 1rem 0;
+    }
+    
+    .toolbar-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding-left: 1rem;
+    }
+    
+    .toolbar-group {
+        align-items: stretch;
+    }
+    
+    .toolbar-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.8rem;
+        min-height: 2.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .toolbar-container {
+        padding-left: 0.75rem;
+    }
+    
+    .toolbar-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .toolbar-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toolbar-label {
+        text-align: center;
+    }
+}
+
+/* Focus States for Accessibility */
+.toolbar-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.toolbar-btn-outline:focus {
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.3);
+}
+
+/* Loading State */
+.btn-modern.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn-modern.loading:after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .salary-sheet-table {
     width: 100%;
     border-collapse: collapse;
