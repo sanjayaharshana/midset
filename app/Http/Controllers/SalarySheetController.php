@@ -496,7 +496,7 @@ class SalarySheetController extends Controller
      */
     public function print(SalarySheet $salarySheet)
     {
-        $salarySheet->load(['job.client', 'items.position']);
+        $salarySheet->load(['job.client', 'job.officer', 'job.reporter', 'items.position']);
 
         return view('admin.salary-sheets.print', compact('salarySheet'));
     }

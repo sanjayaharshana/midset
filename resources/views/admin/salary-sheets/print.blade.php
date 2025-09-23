@@ -29,6 +29,71 @@
             max-width: 100%;
         }
 
+        /* Letterhead Styles */
+        .letterhead {
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+        }
+
+        .letterhead-content {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .letterhead-left {
+            flex-shrink: 0;
+        }
+
+        .company-logo {
+            max-height: 80px;
+            max-width: 120px;
+            object-fit: contain;
+        }
+
+        .letterhead-right {
+            flex: 1;
+            text-align: right;
+        }
+
+        .company-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .company-details {
+            font-size: 11px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .company-address {
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .company-contact {
+            margin-bottom: 4px;
+        }
+
+        .contact-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* Responsive letterhead */
+        @media print {
+            .letterhead {
+                page-break-inside: avoid;
+            }
+        }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
@@ -68,40 +133,130 @@
 
         .job-info {
             background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
         }
 
         .job-info h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 14px;
+            margin-bottom: 8px;
             color: #333;
+            font-weight: bold;
         }
 
-        .job-details {
+        .job-info-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
+            margin-bottom: 8px;
         }
 
-        .job-detail {
+        .job-column {
             display: flex;
             flex-direction: column;
+            gap: 4px;
         }
 
-        .job-detail label {
-            font-weight: bold;
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 10px;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 2px;
+            line-height: 1.3;
         }
 
-        .job-detail span {
-            font-size: 12px;
+        .info-row .label {
+            font-weight: bold;
+            color: #666;
+            min-width: 50px;
+            text-transform: uppercase;
+        }
+
+        .info-row .value {
             color: #333;
+            text-align: right;
+            flex: 1;
+            margin-left: 8px;
+            word-break: break-word;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.in_progress {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-badge.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .additional-details {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            font-size: 9px;
+            line-height: 1.3;
+        }
+
+        .detail-item .label {
+            font-weight: bold;
+            color: #666;
+            margin-right: 5px;
+            text-transform: uppercase;
+        }
+
+        .detail-item .value {
+            color: #333;
+            word-break: break-word;
+        }
+
+        /* Responsive adjustments for print */
+        @media print {
+            .job-info {
+                page-break-inside: avoid;
+                margin-bottom: 10px;
+            }
+            
+            .job-info-grid {
+                gap: 10px;
+            }
+            
+            .info-row {
+                font-size: 9px;
+            }
+            
+            .additional-details {
+                gap: 15px;
+            }
         }
 
         .summary-section {
@@ -263,6 +418,40 @@
 </head>
 <body>
     <div class="print-container">
+        <!-- Letterhead -->
+        <div class="letterhead">
+            <div class="letterhead-content">
+                <div class="letterhead-left">
+                    @if(file_exists(public_path('logo.png')))
+                        <img src="{{ asset('logo.png') }}" alt="Company Logo" class="company-logo">
+                    @endif
+                </div>
+                <div class="letterhead-right">
+                    <h1 class="company-name">{{ get_setting('company_name', 'Company Name') }}</h1>
+                    <div class="company-details">
+                        @if(get_setting('company_address'))
+                            <div class="company-address">{{ get_setting('company_address') }}</div>
+                        @endif
+                        @if(get_setting('company_phone'))
+                            <div class="company-contact">
+                                <span class="contact-label">Phone:</span> {{ get_setting('company_phone') }}
+                            </div>
+                        @endif
+                        @if(get_setting('company_email'))
+                            <div class="company-contact">
+                                <span class="contact-label">Email:</span> {{ get_setting('company_email') }}
+                            </div>
+                        @endif
+                        @if(get_setting('company_website'))
+                            <div class="company-contact">
+                                <span class="contact-label">Website:</span> {{ get_setting('company_website') }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="header">
             <h1>SALARY SHEET</h1>
@@ -283,24 +472,91 @@
         @if($salarySheet->job)
         <div class="job-info">
             <h3>Job Information</h3>
-            <div class="job-details">
-                <div class="job-detail">
-                    <label>Job Number</label>
-                    <span>{{ $salarySheet->job->job_number ?? 'N/A' }}</span>
+            <div class="job-info-grid">
+                <!-- Left Column - Job Details -->
+                <div class="job-column">
+                    <div class="info-row">
+                        <span class="label">Job Number:</span>
+                        <span class="value">{{ $salarySheet->job->job_number ?? 'N/A' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Job Title:</span>
+                        <span class="value">{{ $salarySheet->job->job_name ?? 'N/A' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Status:</span>
+                        <span class="status-badge {{ $salarySheet->job->status }}">{{ strtoupper($salarySheet->job->status ?? 'N/A') }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Period:</span>
+                        <span class="value">
+                            @if($salarySheet->job->start_date && $salarySheet->job->end_date)
+                                {{ $salarySheet->job->start_date->format('M d') }} - {{ $salarySheet->job->end_date->format('M d, Y') }}
+                            @else
+                                N/A
+                            @endif
+                        </span>
+                    </div>
                 </div>
-                <div class="job-detail">
-                    <label>Job Title</label>
-                    <span>{{ $salarySheet->job->job_title ?? 'N/A' }}</span>
+                
+                <!-- Middle Column - Client Details -->
+                <div class="job-column">
+                    <div class="info-row">
+                        <span class="label">Client:</span>
+                        <span class="value">{{ $salarySheet->job->client->name ?? 'N/A' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Code:</span>
+                        <span class="value">{{ $salarySheet->job->client->short_code ?? 'N/A' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Company:</span>
+                        <span class="value">{{ $salarySheet->job->client->company_name ?? 'N/A' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Contact:</span>
+                        <span class="value">{{ $salarySheet->job->client->contact_person ?? 'N/A' }}</span>
+                    </div>
                 </div>
-                <div class="job-detail">
-                    <label>Client</label>
-                    <span>{{ $salarySheet->job->client->client_name ?? 'N/A' }}</span>
-                </div>
-                <div class="job-detail">
-                    <label>Location</label>
-                    <span>{{ $salarySheet->location ?? 'N/A' }}</span>
+                
+                <!-- Right Column - Assignment & Contact -->
+                <div class="job-column">
+                    <div class="info-row">
+                        <span class="label">Officer:</span>
+                        <span class="value">{{ $salarySheet->job->officer->name ?? ($salarySheet->job->officer_name ?? 'N/A') }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Reporter:</span>
+                        <span class="value">{{ $salarySheet->job->reporter->name ?? ($salarySheet->job->reporter_officer_name ?? 'N/A') }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Email:</span>
+                        <span class="value">{{ $salarySheet->job->client->email ?? 'N/A' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Phone:</span>
+                        <span class="value">{{ $salarySheet->job->client->phone ?? 'N/A' }}</span>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Additional Details (if needed) -->
+            @if($salarySheet->job->client->company_address || $salarySheet->job->client->bank_name)
+            <div class="additional-details">
+                @if($salarySheet->job->client->company_address)
+                <div class="detail-item">
+                    <span class="label">Address:</span>
+                    <span class="value">{{ $salarySheet->job->client->company_address }}</span>
+                </div>
+                @endif
+                @if($salarySheet->job->client->bank_name)
+                <div class="detail-item">
+                    <span class="label">Bank:</span>
+                    <span class="value">{{ $salarySheet->job->client->bank_name }} - ****{{ substr($salarySheet->job->client->bank_account_number, -4) }}</span>
+                </div>
+                @endif
+            </div>
+            @endif
         </div>
         @endif
 

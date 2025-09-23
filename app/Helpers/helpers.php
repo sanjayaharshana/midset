@@ -11,7 +11,7 @@ if (!function_exists('setting')) {
      */
     function setting($key, $value = null, array $options = [])
     {
-        if ($value !== null) {
+        if ($value !== null && !is_array($options) && empty($options)) {
             // If setting doesn't exist, create it with default options
             if (!\App\Helpers\SettingsHelper::exists($key)) {
                 $defaultOptions = array_merge([
@@ -28,7 +28,21 @@ if (!function_exists('setting')) {
             return \App\Helpers\SettingsHelper::set($key, $value, $options);
         }
         
-        return \App\Helpers\SettingsHelper::get($key);
+        return \App\Helpers\SettingsHelper::get($key, $value);
+    }
+}
+
+if (!function_exists('get_setting')) {
+    /**
+     * Get a setting value with default fallback
+     *
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    function get_setting($key, $default = null)
+    {
+        return \App\Helpers\SettingsHelper::get($key, $default);
     }
 }
 
