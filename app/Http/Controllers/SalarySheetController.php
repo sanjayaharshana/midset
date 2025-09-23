@@ -312,9 +312,9 @@ class SalarySheetController extends Controller
             // SALARY_SHEET TABLE LOGIC: Check if data exists for job_id
             // If exists: UPDATE the existing record
             // If not exists: INSERT new record
-            
+
             $existingSalarySheet = SalarySheet::where('job_id', $request->job_id)->first();
-            
+
             if ($existingSalarySheet) {
                 // UPDATE: Existing salary sheet found for this job_id
                 $salarySheet = $existingSalarySheet;
@@ -323,7 +323,7 @@ class SalarySheetController extends Controller
                     'location' => $request->location,
                     'notes' => $request->notes,
                 ]);
-                
+
                 Log::info('Updated existing salary sheet for job_id:', [
                     'job_id' => $request->job_id,
                     'sheet_no' => $salarySheet->sheet_no,
@@ -338,7 +338,7 @@ class SalarySheetController extends Controller
                 while ($retryCount < $maxRetries && !$salarySheet) {
                     try {
                         $sheetNumber = SalarySheet::generateSheetNumber();
-                        
+
                         $salarySheet = SalarySheet::create([
                             'sheet_no' => $sheetNumber,
                             'job_id' => $request->job_id,
@@ -353,24 +353,24 @@ class SalarySheetController extends Controller
                             'created_data' => $salarySheet->toArray()
                         ]);
                         break; // Success, exit the retry loop
-                        
+
                     } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                         $retryCount++;
                         Log::warning("Duplicate sheet number detected, retry attempt {$retryCount}/{$maxRetries}: {$sheetNumber}");
-                        
+
                         if ($retryCount >= $maxRetries) {
                             throw new \Exception("Failed to generate unique sheet number after {$maxRetries} attempts");
                         }
-                        
+
                         // Small delay before retry
                         usleep(100000); // 100ms
                     }
                 }
             }
-            
+
             // EMPLOYERS_SALARY_SHEET_ITEM TABLE LOGIC: Always remove all items with same sheet_no, then insert everything fresh
             // This ensures clean data without duplicates or orphaned records
-            
+
             $deletedItemsCount = EmployersSalarySheetItem::where('sheet_no', $salarySheet->sheet_no)->delete();
             Log::info('Removed existing salary sheet items:', [
                 'sheet_no' => $salarySheet->sheet_no,
@@ -379,7 +379,7 @@ class SalarySheetController extends Controller
 
             // Process each promoter row
             $createdItems = [];
-            
+
             // Debug: Check if salarySheet is properly set
             if (!$salarySheet || !$salarySheet->sheet_no) {
                 Log::error('SalarySheet is null or sheet_no is empty:', [
@@ -388,9 +388,9 @@ class SalarySheetController extends Controller
                 ]);
                 throw new \Exception('SalarySheet is not properly initialized');
             }
-            
+
             Log::info('Processing salary sheet items for sheet_no:', ['sheet_no' => $salarySheet->sheet_no]);
-            
+
             foreach ($request->rows as $rowIndex => $rowData) {
                 if (empty($rowData['promoter_id'])) {
                     continue; // Skip empty rows
@@ -458,6 +458,7 @@ class SalarySheetController extends Controller
                     'coordinator_details' => $coordinatorDetails,
                     'job_id' => $request->job_id,
                     'sheet_no' => $salarySheet->sheet_no,
+                    'allowances_data' => $rowData['allowances'] ?? null,
                 ]);
 
                 $createdItems[] = $item->no;
@@ -542,7 +543,7 @@ class SalarySheetController extends Controller
                 // Extract coordinator data and find the correct coordinator ID
                 $coordinatorData = $item->coordinator_details ?? [];
                 $coordinatorDatabaseId = null;
-                
+
                 if (!empty($coordinatorData['coordinator_id'])) {
                     // Find coordinator by their custom ID to get the database ID
                     $coordinator = Coordinator::where('coordinator_id', $coordinatorData['coordinator_id'])->first();

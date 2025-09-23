@@ -21,6 +21,7 @@ class EmployersSalarySheetItem extends Model
         'coordinator_details',
         'job_id',
         'sheet_no',
+        'allowances_data'
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class EmployersSalarySheetItem extends Model
         'coordinator_details' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'allowances_data' => 'array',
     ];
 
     /**
@@ -40,7 +42,7 @@ class EmployersSalarySheetItem extends Model
         $prefix = 'ITM';
         $year = date('Y');
         $month = date('n');
-        
+
         // Get the last item number for this month/year
         $lastItem = self::whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
@@ -191,9 +193,9 @@ class EmployersSalarySheetItem extends Model
      */
     public function getTotalEarningsAttribute()
     {
-        return ($this->base_amount ?? 0) + 
-               ($this->food_allowance ?? 0) + 
-               ($this->accommodation_allowance ?? 0) + 
+        return ($this->base_amount ?? 0) +
+               ($this->food_allowance ?? 0) +
+               ($this->accommodation_allowance ?? 0) +
                ($this->coordinator_amount ?? 0);
     }
 
@@ -212,7 +214,7 @@ class EmployersSalarySheetItem extends Model
     {
         $attendance = $this->daily_attendance;
         $formatted = [];
-        
+
         foreach ($attendance as $date => $value) {
             $formatted[] = [
                 'date' => $date,
@@ -221,7 +223,7 @@ class EmployersSalarySheetItem extends Model
                 'status' => $value > 0 ? 'Present' : 'Absent'
             ];
         }
-        
+
         return $formatted;
     }
 }
