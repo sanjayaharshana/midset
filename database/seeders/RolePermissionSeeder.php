@@ -85,6 +85,12 @@ class RolePermissionSeeder extends Seeder
             'create reporters',
             'edit reporters',
             'delete reporters',
+            
+            // Officer Management
+            'view officers',
+            'create officers',
+            'edit officers',
+            'delete officers',
         ];
 
         foreach ($permissions as $permission) {
@@ -126,6 +132,10 @@ class RolePermissionSeeder extends Seeder
             'create reporters',
             'edit reporters',
             'delete reporters',
+            'view officers',
+            'create officers',
+            'edit officers',
+            'delete officers',
             'view dashboard',
             'access admin panel',
         ]);
@@ -134,6 +144,12 @@ class RolePermissionSeeder extends Seeder
         $reporterRole->syncPermissions([
             'view dashboard',
             'view reporters',
+        ]);
+
+        $officerRole = Role::firstOrCreate(['name' => 'officer']);
+        $officerRole->syncPermissions([
+            'view dashboard',
+            'view officers',
         ]);
 
         $userRole = Role::firstOrCreate(['name' => 'user']);
@@ -171,6 +187,17 @@ class RolePermissionSeeder extends Seeder
             ]
         );
         $reporterUser->assignRole('reporter');
+
+        // Create officer user
+        $officerUser = User::firstOrCreate(
+            ['email' => 'officer@mindpark.com'],
+            [
+                'name' => 'Officer User',
+                'password' => Hash::make('password123'),
+                'xelenic_id' => 'OFF001',
+            ]
+        );
+        $officerUser->assignRole('officer');
 
         // Create regular user
         $regularUser = User::firstOrCreate(

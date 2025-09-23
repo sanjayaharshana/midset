@@ -885,7 +885,7 @@
             </li>
 
             <!-- System Management Group -->
-            @if(auth()->user()->can('view users') || auth()->user()->can('view roles') || auth()->user()->can('view reporters'))
+            @if(auth()->user()->can('view users') || auth()->user()->can('view roles') || auth()->user()->can('view reporters') || auth()->user()->can('view officers'))
             <li class="menu-group">
                 <div class="menu-group-header">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -931,6 +931,19 @@
                                 <polyline points="10,9 9,9 8,9"></polyline>
                             </svg>
                             Reporter Management
+                        </a>
+                    </li>
+                    @endcan
+                    @can('view officers')
+                    <li>
+                        <a href="{{ route('admin.officers.index') }}" class="{{ request()->routeIs('admin.officers*') ? 'active' : '' }}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            Officer Management
                         </a>
                     </li>
                     @endcan
