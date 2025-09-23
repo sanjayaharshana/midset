@@ -329,6 +329,26 @@
 
         <!-- Salary Sheet Items Table -->
         @if($salarySheet->items && $salarySheet->items->count() > 0)
+        @php
+            // Extract all unique attendance dates from all items
+            $allAttendanceDates = [];
+            foreach($salarySheet->items as $item) {
+                if(isset($item->attendance_data['attendance']) && is_array($item->attendance_data['attendance'])) {
+                    $dates = array_keys($item->attendance_data['attendance']);
+                    $allAttendanceDates = array_merge($allAttendanceDates, $dates);
+                }
+            }
+            $allAttendanceDates = array_unique($allAttendanceDates);
+            sort($allAttendanceDates);
+            $attendanceColumnsCount = count($allAttendanceDates);
+            
+            // Extract dynamic allowances from job
+            $dynamicAllowances = [];
+            if($salarySheet->job && isset($salarySheet->job->allowance) && is_array($salarySheet->job->allowance)) {
+                $dynamicAllowances = $salarySheet->job->allowance;
+            }
+            $allowanceColumnsCount = count($dynamicAllowances);
+        @endphp
         <table class="items-table">
             <thead>
                 <tr>
@@ -336,12 +356,13 @@
                     <th rowspan="2">Location</th>
                     <th rowspan="2">Position</th>
                     <th rowspan="2">Promoter</th>
-                    <th colspan="7">Daily Attendance</th>
+                    <th colspan="{{ $attendanceColumnsCount }}">Daily Attendance</th>
                     <th rowspan="2">Total Days</th>
                     <th rowspan="2">Attendance Amount</th>
                     <th rowspan="2">Base Amount</th>
-                    <th rowspan="2">Food Allowance</th>
-                    <th rowspan="2">Accommodation</th>
+                    @if($allowanceColumnsCount > 0)
+                        <th colspan="{{ $allowanceColumnsCount }}">Dynamic Allowances</th>
+                    @endif
                     <th rowspan="2">Expenses</th>
                     <th rowspan="2">Hold for Weeks</th>
                     <th rowspan="2">Net Amount</th>
@@ -349,13 +370,12 @@
                     <th rowspan="2">Coordination Fee</th>
                 </tr>
                 <tr>
-                    <th>Day 1</th>
-                    <th>Day 2</th>
-                    <th>Day 3</th>
-                    <th>Day 4</th>
-                    <th>Day 5</th>
-                    <th>Day 6</th>
-                    <th>Day 7</th>
+                    @foreach($allAttendanceDates as $date)
+                        <th>{{ \Carbon\Carbon::parse($date)->format('M d') }}</th>
+                    @endforeach
+                    @foreach($dynamicAllowances as $allowance)
+                        <th>{{ $allowance['allowance_name'] ?? 'Allowance' }}</th>
+                    @endforeach
                 </tr>
             </thead>
             <tbody>
@@ -367,27 +387,31 @@
                     <td>{{ $item->attendance_data['promoter_name'] ?? 'N/A' }}</td>
                     
                     <!-- Daily Attendance -->
-                    @if(isset($item->attendance_data['attendance']) && is_array($item->attendance_data['attendance']))
+                    @foreach($allAttendanceDates as $date)
                         @php
-                            $attendanceDates = array_keys($item->attendance_data['attendance']);
-                            $attendanceValues = array_values($item->attendance_data['attendance']);
+                            $attendanceValue = isset($item->attendance_data['attendance'][$date]) ? $item->attendance_data['attendance'][$date] : 0;
                         @endphp
-                        @for($i = 0; $i < 7; $i++)
-                            <td class="attendance-date {{ isset($attendanceValues[$i]) && $attendanceValues[$i] > 0 ? 'present' : 'absent' }}">
-                                {{ isset($attendanceValues[$i]) && $attendanceValues[$i] > 0 ? 'P' : 'A' }}
-                            </td>
-                        @endfor
-                    @else
-                        @for($i = 0; $i < 7; $i++)
-                            <td class="attendance-date absent">A</td>
-                        @endfor
-                    @endif
+                        <td class="attendance-date {{ $attendanceValue > 0 ? 'present' : 'absent' }}">
+                            {{ $attendanceValue > 0 ? 'P' : 'A' }}
+                        </td>
+                    @endforeach
                     
                     <td><strong>{{ $item->attendance_data['total'] ?? 0 }}</strong></td>
                     <td class="amount positive">Rs. {{ number_format($item->attendance_data['amount'] ?? 0, 2) }}</td>
                     <td class="amount positive">Rs. {{ number_format($item->payment_data['amount'] ?? 0, 2) }}</td>
-                    <td class="amount positive">Rs. {{ number_format($item->payment_data['food_allowance'] ?? 0, 2) }}</td>
-                    <td class="amount positive">Rs. {{ number_format($item->payment_data['accommodation_allowance'] ?? 0, 2) }}</td>
+                    
+                    <!-- Dynamic Allowances -->
+                    @foreach($dynamicAllowances as $allowance)
+                        @php
+                            $allowanceName = $allowance['allowance_name'] ?? '';
+                            $allowanceValue = 0;
+                            if(isset($item->allowances_data) && is_array($item->allowances_data) && isset($item->allowances_data[$allowanceName])) {
+                                $allowanceValue = $item->allowances_data[$allowanceName];
+                            }
+                        @endphp
+                        <td class="amount positive">Rs. {{ number_format($allowanceValue, 2) }}</td>
+                    @endforeach
+                    
                     <td class="amount negative">Rs. {{ number_format($item->payment_data['expenses'] ?? 0, 2) }}</td>
                     <td class="amount negative">Rs. {{ number_format($item->payment_data['hold_for_weeks'] ?? 0, 2) }}</td>
                     <td class="amount"><strong>Rs. {{ number_format($item->payment_data['net_amount'] ?? 0, 2) }}</strong></td>
