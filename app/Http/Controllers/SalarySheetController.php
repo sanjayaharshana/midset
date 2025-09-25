@@ -552,6 +552,9 @@ class SalarySheetController extends Controller
                     }
                 }
 
+                // Extract allowances data
+                $allowancesData = $item->allowances_data ?? [];
+
                 // Build row data
                 $rowData = [
                     'location' => $item->location,
@@ -569,7 +572,8 @@ class SalarySheetController extends Controller
                     'net_amount' => (float) $paymentData['net_amount'] ?? 0,
                     'coordinator_id' => $coordinatorDatabaseId,
                     'current_coordinator' => $coordinatorData['current_coordinator'] ?? null,
-                    'coordination_fee' => $coordinatorData['amount'] ?? null
+                    'coordination_fee' => $coordinatorData['amount'] ?? null,
+                    'allowances' => $allowancesData
                 ];
 
                 // Convert null values to null (not empty strings)

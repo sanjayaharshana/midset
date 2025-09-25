@@ -1847,6 +1847,15 @@ function updateAllPaymentRows(jobAllowances = []) {
                 net_amount: paymentCell.querySelector('input[name*="[net_amount]"]')?.value || 0
             };
             
+            // Get current allowance values
+            const allowanceInputs = paymentCell.querySelectorAll('input[name*="[allowances]"]');
+            allowanceInputs.forEach(input => {
+                const allowanceName = input.name.match(/\[allowances\]\[([^\]]+)\]/)?.[1];
+                if (allowanceName) {
+                    currentValues[allowanceName] = input.value || 0;
+                }
+            });
+            
             // Generate new payment row HTML with allowance columns
             paymentCell.innerHTML = generatePaymentRowHTML(rowNumber, jobAllowances, currentValues);
         }
@@ -3467,7 +3476,8 @@ function addPromoterRowFromJson(rowData, index) {
                 amount: rowData.amount || 0,
                 expenses: rowData.expenses || 0,
                 hold_for_8_weeks: rowData.hold_for_8_weeks || 0,
-                net_amount: rowData.net_amount || 0
+                net_amount: rowData.net_amount || 0,
+                ...(rowData.allowances || {})
             })}
         </td>
         <td>
