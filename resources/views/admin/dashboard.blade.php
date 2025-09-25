@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
-@section('page-title', 'Dashboard')
+@section('title', __('common.dashboard'))
+@section('page-title', __('common.dashboard'))
 
 @section('breadcrumbs')
     <span class="breadcrumb-separator">›</span>
-    <span class="breadcrumb-item active">Dashboard</span>
+    <span class="breadcrumb-item active">{{ __('common.dashboard') }}</span>
 @endsection
 
 @section('content')
@@ -13,19 +13,19 @@
 <div class="stats-grid">
     <div class="stat-card">
         <h3>{{ $stats['total_clients'] }}</h3>
-        <p>Total Clients</p>
+        <p>{{ __('common.total_clients') }}</p>
     </div>
     <div class="stat-card">
         <h3>{{ $stats['total_promoters'] }}</h3>
-        <p>Total Promoters</p>
+        <p>{{ __('common.total_promoters') }}</p>
     </div>
     <div class="stat-card">
         <h3>{{ $stats['total_coordinators'] }}</h3>
-        <p>Total Coordinators</p>
+        <p>{{ __('common.total_coordinators') }}</p>
     </div>
     <div class="stat-card">
         <h3>{{ $stats['total_campaigns'] }}</h3>
-        <p>Campaign Count</p>
+        <p>{{ __('common.campaign_count') }}</p>
     </div>
 </div>
 
@@ -40,7 +40,7 @@
                     <path d="M3 3v18h18"></path>
                     <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
                 </svg>
-                Campaign Count (Last 6 Months)
+                {{ __('common.campaign_count_last_6_months') }}
             </h3>
         </div>
         <div class="card-body">
@@ -56,7 +56,7 @@
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                Registered Promoters (Last 6 Months)
+                {{ __('common.registered_promoters_last_6_months') }}
             </h3>
         </div>
         <div class="card-body">
@@ -72,7 +72,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
             </svg>
-            Quick Actions
+            {{ __('common.quick_actions') }}
         </h3>
     </div>
     <div class="card-body">
@@ -84,7 +84,7 @@
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                Add New Client
+                {{ __('common.add_new_client') }}
             </a>
             <a href="{{ route('admin.promoters.create') }}" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; padding: 1rem;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -92,7 +92,7 @@
                     <circle cx="12" cy="7" r="4"></circle>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                Add New Promoter
+                {{ __('common.add_new_promoter') }}
             </a>
             <a href="{{ route('admin.coordinators.create') }}" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; padding: 1rem;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -101,7 +101,7 @@
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                Add New Coordinator
+                {{ __('common.add_new_coordinator') }}
             </a>
             <a href="{{ route('admin.salary-sheets.create') }}" class="btn btn-warning" style="display: flex; align-items: center; justify-content: center; padding: 1rem;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -109,7 +109,7 @@
                     <line x1="8" y1="21" x2="16" y2="21"></line>
                     <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
-                Create Salary Sheet
+                {{ __('common.create_salary_sheet') }}
             </a>
         </div>
     </div>

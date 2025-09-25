@@ -1,0 +1,122 @@
+<?php
+
+return [
+    // Navigation
+    'dashboard' => 'ප්‍රධාන පුවරුව',
+    'users' => 'පරිශීලකයන්',
+    'roles' => 'භූමිකා',
+    'permissions' => 'අවසර',
+    'clients' => 'සේවාදායකයන්',
+    'jobs' => 'රැකියා',
+    'promoters' => 'ප්‍රවර්ධකයන්',
+    'coordinators' => 'සම්බන්ධකයන්',
+    'salary_sheets' => 'වැටුප් පත්‍ර',
+    'reporters' => 'වාර්තාකරුවන්',
+    'officers' => 'නිලධාරීන්',
+    'settings' => 'සැකසුම්',
+    
+    // Common Actions
+    'create' => 'නිර්මාණය',
+    'edit' => 'සංස්කරණය',
+    'delete' => 'මකන්න',
+    'view' => 'බලන්න',
+    'save' => 'සුරකින්න',
+    'cancel' => 'අවලංගු',
+    'update' => 'යාවත්කාලීන',
+    'back' => 'ආපසු',
+    'print' => 'මුද්‍රණය',
+    'export' => 'අපනයන',
+    'import' => 'ආනයන',
+    'search' => 'සොයන්න',
+    'filter' => 'පෙරණය',
+    'reset' => 'නැවත සැකසුම',
+    'submit' => 'ඉදිරිපත් කරන්න',
+    'close' => 'වසන්න',
+    
+    // Status
+    'active' => 'ක්‍රියාකාරී',
+    'inactive' => 'අක්‍රිය',
+    'pending' => 'පොරොත්තුවෙන්',
+    'completed' => 'සම්පූර්ණ',
+    'cancelled' => 'අවලංගු',
+    'in_progress' => 'ප්‍රගතියෙන්',
+    'suspended' => 'අත්හිටුවන ලද',
+    
+    // Form Labels
+    'name' => 'නම',
+    'email' => 'විද්‍යුත් තැපෑල',
+    'phone' => 'දුරකථන',
+    'address' => 'ලිපිනය',
+    'description' => 'විස්තර',
+    'notes' => 'සටහන්',
+    'status' => 'තත්වය',
+    'created_at' => 'නිර්මාණය කරන ලද',
+    'updated_at' => 'යාවත්කාලීන කරන ලද',
+    'actions' => 'ක්‍රියා',
+    
+    // Messages
+    'success' => 'සාර්ථක',
+    'error' => 'දෝෂය',
+    'warning' => 'අනතුරු ඇඟවීම',
+    'info' => 'තොරතුරු',
+    'confirm_delete' => 'ඔබට මෙම අයිතමය මකා දැමීමට අවශ්‍යද?',
+    'item_created' => 'අයිතමය සාර්ථකව නිර්මාණය කරන ලදී',
+    'item_updated' => 'අයිතමය සාර්ථකව යාවත්කාලීන කරන ලදී',
+    'item_deleted' => 'අයිතමය සාර්ථකව මකා දමන ලදී',
+    'no_data_found' => 'දත්ත හමු නොවීය',
+    'loading' => 'පූරණය වෙමින්...',
+    
+    // Time
+    'today' => 'අද',
+    'yesterday' => 'ඊයේ',
+    'tomorrow' => 'හෙට',
+    'this_week' => 'මේ සතිය',
+    'this_month' => 'මේ මාසය',
+    'this_year' => 'මේ වර්ෂය',
+    
+    // Numbers
+    'total' => 'සම්පූර්ණ',
+    'amount' => 'ප්‍රමාණය',
+    'quantity' => 'ප්‍රමාණය',
+    'count' => 'ගණන',
+    'percentage' => 'ප්‍රතිශතය',
+    
+    // Additional fields
+    'company_name' => 'සමාගම් නම',
+    'website' => 'වෙබ් අඩවිය',
+    
+    // Navigation and UI
+    'app_name' => 'මයින්ඩ්පාර්ක් පරිපාලනය',
+    'admin_panel' => 'පරිපාලන පැනලය',
+    'system_management' => 'පද්ධති කළමනාකරණය',
+    'user_management' => 'පරිශීලක කළමනාකරණය',
+    'role_management' => 'භූමිකා කළමනාකරණය',
+    'reporter_management' => 'වාර්තාකරු කළමනාකරණය',
+    'officer_management' => 'නිලධාරී කළමනාකරණය',
+    'business_management' => 'ව්‍යාපාර කළමනාකරණය',
+    'client_management' => 'සේවාදායක කළමනාකරණය',
+    'job_management' => 'රැකියා කළමනාකරණය',
+    'promoter_management' => 'ප්‍රවර්ධක කළමනාකරණය',
+    'promoter_details' => 'ප්‍රවර්ධක තොරතුරු',
+    'promoter_positions' => 'ප්‍රවර්ධක තනතුරු',
+    'coordinator_details' => 'සම්බන්ධක තොරතුරු',
+    'hr_management' => 'මානව සම්පත් කළමනාකරණය',
+    'salary_sheets' => 'වැටුප් පත්‍ර',
+    'salary_rules' => 'වැටුප් නීති',
+    'allowances' => 'අතිරේක',
+    'welcome' => 'සාදරයෙන් පිළිගනිමු',
+    'logout' => 'පිටවීම',
+    
+    // Dashboard specific
+    'total_clients' => 'මුළු සේවාදායකයන්',
+    'total_promoters' => 'මුළු ප්‍රවර්ධකයන්',
+    'total_coordinators' => 'මුළු සම්බන්ධකයන්',
+    'campaign_count' => 'උද්ඝෝෂණ ගණන',
+    'campaign_count_last_6_months' => 'උද්ඝෝෂණ ගණන (පසුගිය මාස 6)',
+    'registered_promoters_last_6_months' => 'ලියාපදිංචි ප්‍රවර්ධකයන් (පසුගිය මාස 6)',
+    'quick_actions' => 'ක්‍රියාකාරී ක්‍රියා',
+    'add_new_client' => 'නව සේවාදායකයෙක් එකතු කරන්න',
+    'add_new_promoter' => 'නව ප්‍රවර්ධකයෙක් එකතු කරන්න',
+    'add_new_coordinator' => 'නව සම්බන්ධකයෙක් එකතු කරන්න',
+    'create_salary_sheet' => 'වැටුප් පත්‍රය සාදන්න',
+];

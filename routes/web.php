@@ -16,11 +16,17 @@ use App\Http\Controllers\AllowanceController;
 use App\Http\Controllers\ReporterController;
 use App\Http\Controllers\OfficerController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\LanguageController;
 
 // Public routes
 Route::get('/', function () {
     return redirect('/login');
 });
+
+// Language switching routes
+Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
+Route::get('/api/language/current', [LanguageController::class, 'current'])->name('language.current');
+Route::get('/api/language/available', [LanguageController::class, 'available'])->name('language.available');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);

@@ -427,24 +427,24 @@
                     @endif
                 </div>
                 <div class="letterhead-right">
-                    <h1 class="company-name">{{ get_setting('company_name', 'Company Name') }}</h1>
+                    <h1 class="company-name">{{ get_setting('company_name', __('common.company_name')) }}</h1>
                     <div class="company-details">
                         @if(get_setting('company_address'))
                             <div class="company-address">{{ get_setting('company_address') }}</div>
                         @endif
                         @if(get_setting('company_phone'))
                             <div class="company-contact">
-                                <span class="contact-label">Phone:</span> {{ get_setting('company_phone') }}
+                                <span class="contact-label">{{ __('common.phone') }}:</span> {{ get_setting('company_phone') }}
                             </div>
                         @endif
                         @if(get_setting('company_email'))
                             <div class="company-contact">
-                                <span class="contact-label">Email:</span> {{ get_setting('company_email') }}
+                                <span class="contact-label">{{ __('common.email') }}:</span> {{ get_setting('company_email') }}
                             </div>
                         @endif
                         @if(get_setting('company_website'))
                             <div class="company-contact">
-                                <span class="contact-label">Website:</span> {{ get_setting('company_website') }}
+                                <span class="contact-label">{{ __('common.website') }}:</span> {{ get_setting('company_website') }}
                             </div>
                         @endif
                     </div>
@@ -454,16 +454,16 @@
 
         <!-- Header -->
         <div class="header">
-            <h1>SALARY SHEET</h1>
+            <h1>{{ __('salary_sheets.salary_sheet') }}</h1>
             <h2>{{ $salarySheet->sheet_no }}</h2>
             <div class="header-info">
                 <div>
-                    <strong>Period:</strong> {{ $salarySheet->month_name }} {{ $salarySheet->year }}<br>
-                    <strong>Location:</strong> {{ $salarySheet->location ?? 'N/A' }}
+                    <strong>{{ __('salary_sheets.period') }}:</strong> {{ $salarySheet->month_name }} {{ $salarySheet->year }}<br>
+                    <strong>{{ __('salary_sheets.location') }}:</strong> {{ $salarySheet->location ?? 'N/A' }}
                 </div>
                 <div>
-                    <strong>Created:</strong> {{ $salarySheet->created_at->format('M d, Y') }}<br>
-                    <strong>Status:</strong> <span class="status">{{ strtoupper($salarySheet->status) }}</span>
+                    <strong>{{ __('salary_sheets.created') }}:</strong> {{ $salarySheet->created_at->format('M d, Y') }}<br>
+                    <strong>{{ __('salary_sheets.status') }}:</strong> <span class="status">{{ strtoupper($salarySheet->status) }}</span>
                 </div>
             </div>
         </div>

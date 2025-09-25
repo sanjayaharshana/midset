@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin Panel') - Mindpark HRM</title>
-    
+
     <!-- SweetAlert2 CSS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- jQuery -->
@@ -44,7 +44,6 @@
         }
 
         .sidebar-header {
-            padding: 2rem 1.5rem;
             background: #f8fafc;
             border-bottom: 1px solid #e5e7eb;
         }
@@ -866,9 +865,8 @@
 </head>
 <body>
     <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>Mindpark Admin</h2>
-            <p>Admin Panel</p>
+        <div class="sidebar-header" style="text-align: center;">
+            <img src="{{ asset('logo-righ-text.png') }}" alt="Logo" style="width: 200px;height: 60px;margin-bottom: 1rem;object-fit: contain;margin-top: 20px;">
         </div>
         <ul class="sidebar-menu">
             <!-- Dashboard -->
@@ -880,7 +878,7 @@
                         <rect x="14" y="14" width="7" height="7"></rect>
                         <rect x="3" y="14" width="7" height="7"></rect>
                     </svg>
-                    Dashboard
+                    {{ __('common.dashboard') }}
                 </a>
             </li>
 
@@ -893,7 +891,7 @@
                         <circle cx="9" cy="9" r="2"></circle>
                         <path d="M21 15.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3.5"></path>
                     </svg>
-                    System Management
+                    {{ __('common.system_management') }}
                 </div>
                 <ul class="submenu">
                     @can('view users')
@@ -903,7 +901,7 @@
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
-                            User Management
+                            {{ __('common.user_management') }}
                         </a>
                     </li>
                     @endcan
@@ -916,7 +914,7 @@
                                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            Role Management
+                            {{ __('common.role_management') }}
                         </a>
                     </li>
                     @endcan
@@ -930,7 +928,7 @@
                                 <line x1="16" y1="17" x2="8" y2="17"></line>
                                 <polyline points="10,9 9,9 8,9"></polyline>
                             </svg>
-                            Reporter Management
+                            {{ __('common.reporter_management') }}
                         </a>
                     </li>
                     @endcan
@@ -943,7 +941,7 @@
                                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            Officer Management
+                            {{ __('common.officer_management') }}
                         </a>
                     </li>
                     @endcan
@@ -954,7 +952,7 @@
                                 <circle cx="12" cy="12" r="3"></circle>
                                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                             </svg>
-                            Settings
+                            {{ __('common.settings') }}
                         </a>
                     </li>
                     @endcan
@@ -970,7 +968,7 @@
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9,22 9,12 15,12 15,22"></polyline>
                     </svg>
-                    Business Management
+                    {{ __('common.business_management') }}
                 </div>
                 <ul class="submenu">
                     @can('view clients')
@@ -982,7 +980,7 @@
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            Client Management
+                            {{ __('common.client_management') }}
                         </a>
                     </li>
                     @endcan
@@ -994,7 +992,7 @@
                                 <line x1="8" y1="21" x2="16" y2="21"></line>
                                 <line x1="12" y1="17" x2="12" y2="21"></line>
                             </svg>
-                            Job ID Management
+                            {{ __('common.job_management') }}
                         </a>
                     </li>
                     @endcan
@@ -1011,7 +1009,7 @@
                         <circle cx="12" cy="7" r="4"></circle>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    Promoter Management
+                    {{ __('common.promoter_management') }}
                 </div>
                 <ul class="submenu">
                     @can('view promoters')
@@ -1022,7 +1020,7 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            Promoter Details
+                            {{ __('common.promoter_details') }}
                         </a>
                     </li>
                     @endcan
@@ -1034,7 +1032,7 @@
                                 <circle cx="9" cy="9" r="2"></circle>
                                 <path d="M21 15.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3.5"></path>
                             </svg>
-                            Promoter Positions
+                            {{ __('common.promoter_positions') }}
                         </a>
                     </li>
                     @endcan
@@ -1047,7 +1045,7 @@
                                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            Coordinator Details
+                            {{ __('common.coordinator_details') }}
                         </a>
                     </li>
                     @endcan
@@ -1064,7 +1062,7 @@
                         <line x1="8" y1="21" x2="16" y2="21"></line>
                         <line x1="12" y1="17" x2="12" y2="21"></line>
                     </svg>
-                    HR Management
+                    {{ __('common.hr_management') }}
                 </div>
                 <ul class="submenu">
                     @can('view salary sheets')
@@ -1075,7 +1073,7 @@
                                 <line x1="8" y1="21" x2="16" y2="21"></line>
                                 <line x1="12" y1="17" x2="12" y2="21"></line>
                             </svg>
-                            Salary Sheets
+                            {{ __('common.salary_sheets') }}
                         </a>
                     </li>
                     @endcan
@@ -1087,7 +1085,7 @@
                                 <line x1="9" y1="9" x2="15" y2="15"></line>
                                 <line x1="15" y1="9" x2="9" y2="15"></line>
                             </svg>
-                            Salary Rules
+                            {{ __('common.salary_rules') }}
                         </a>
                     </li>
                     @endcan
@@ -1097,7 +1095,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
                             </svg>
-                            Allowances
+                            {{ __('common.allowances') }}
                         </a>
                     </li>
                     @endcan
@@ -1111,13 +1109,14 @@
         <div class="header">
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
-                <h1>@yield('page-title', 'Dashboard')</h1>
+                <h1>@yield('page-title', __('common.dashboard'))</h1>
             </div>
             <div class="user-menu">
-                <span>Welcome, {{ Auth::user()->name }}</span>
+                @include('partials.language-switcher')
+                <span>{{ __('common.welcome') }}, {{ Auth::user()->name }}</span>
                 <form method="POST" action="{{ route('logout') }}" style="display: inline;">
                     @csrf
-                    <button type="submit" class="logout-btn">Logout</button>
+                    <button type="submit" class="logout-btn">{{ __('common.logout') }}</button>
                 </form>
             </div>
         </div>
@@ -1163,9 +1162,9 @@
         document.addEventListener('click', function(event) {
             const sidebar = document.querySelector('.sidebar');
             const toggleButton = document.querySelector('.mobile-menu-toggle');
-            
-            if (window.innerWidth <= 768 && 
-                !sidebar.contains(event.target) && 
+
+            if (window.innerWidth <= 768 &&
+                !sidebar.contains(event.target) &&
                 !toggleButton.contains(event.target)) {
                 sidebar.classList.remove('open');
             }

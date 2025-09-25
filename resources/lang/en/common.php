@@ -1,0 +1,122 @@
+<?php
+
+return [
+    // Navigation
+    'dashboard' => 'Dashboard',
+    'users' => 'Users',
+    'roles' => 'Roles',
+    'permissions' => 'Permissions',
+    'clients' => 'Clients',
+    'jobs' => 'Jobs',
+    'promoters' => 'Promoters',
+    'coordinators' => 'Coordinators',
+    'salary_sheets' => 'Salary Sheets',
+    'reporters' => 'Reporters',
+    'officers' => 'Officers',
+    'settings' => 'Settings',
+    
+    // Common Actions
+    'create' => 'Create',
+    'edit' => 'Edit',
+    'delete' => 'Delete',
+    'view' => 'View',
+    'save' => 'Save',
+    'cancel' => 'Cancel',
+    'update' => 'Update',
+    'back' => 'Back',
+    'print' => 'Print',
+    'export' => 'Export',
+    'import' => 'Import',
+    'search' => 'Search',
+    'filter' => 'Filter',
+    'reset' => 'Reset',
+    'submit' => 'Submit',
+    'close' => 'Close',
+    
+    // Status
+    'active' => 'Active',
+    'inactive' => 'Inactive',
+    'pending' => 'Pending',
+    'completed' => 'Completed',
+    'cancelled' => 'Cancelled',
+    'in_progress' => 'In Progress',
+    'suspended' => 'Suspended',
+    
+    // Form Labels
+    'name' => 'Name',
+    'email' => 'Email',
+    'phone' => 'Phone',
+    'address' => 'Address',
+    'description' => 'Description',
+    'notes' => 'Notes',
+    'status' => 'Status',
+    'created_at' => 'Created At',
+    'updated_at' => 'Updated At',
+    'actions' => 'Actions',
+    
+    // Messages
+    'success' => 'Success',
+    'error' => 'Error',
+    'warning' => 'Warning',
+    'info' => 'Information',
+    'confirm_delete' => 'Are you sure you want to delete this item?',
+    'item_created' => 'Item created successfully',
+    'item_updated' => 'Item updated successfully',
+    'item_deleted' => 'Item deleted successfully',
+    'no_data_found' => 'No data found',
+    'loading' => 'Loading...',
+    
+    // Time
+    'today' => 'Today',
+    'yesterday' => 'Yesterday',
+    'tomorrow' => 'Tomorrow',
+    'this_week' => 'This Week',
+    'this_month' => 'This Month',
+    'this_year' => 'This Year',
+    
+    // Numbers
+    'total' => 'Total',
+    'amount' => 'Amount',
+    'quantity' => 'Quantity',
+    'count' => 'Count',
+    'percentage' => 'Percentage',
+    
+    // Additional fields
+    'company_name' => 'Company Name',
+    'website' => 'Website',
+    
+    // Navigation and UI
+    'app_name' => 'Mindpark Admin',
+    'admin_panel' => 'Admin Panel',
+    'system_management' => 'System Management',
+    'user_management' => 'User Management',
+    'role_management' => 'Role Management',
+    'reporter_management' => 'Reporter Management',
+    'officer_management' => 'Officer Management',
+    'business_management' => 'Business Management',
+    'client_management' => 'Client Management',
+    'job_management' => 'Job Management',
+    'promoter_management' => 'Promoter Management',
+    'promoter_details' => 'Promoter Details',
+    'promoter_positions' => 'Promoter Positions',
+    'coordinator_details' => 'Coordinator Details',
+    'hr_management' => 'HR Management',
+    'salary_sheets' => 'Salary Sheets',
+    'salary_rules' => 'Salary Rules',
+    'allowances' => 'Allowances',
+    'welcome' => 'Welcome',
+    'logout' => 'Logout',
+    
+    // Dashboard specific
+    'total_clients' => 'Total Clients',
+    'total_promoters' => 'Total Promoters',
+    'total_coordinators' => 'Total Coordinators',
+    'campaign_count' => 'Campaign Count',
+    'campaign_count_last_6_months' => 'Campaign Count (Last 6 Months)',
+    'registered_promoters_last_6_months' => 'Registered Promoters (Last 6 Months)',
+    'quick_actions' => 'Quick Actions',
+    'add_new_client' => 'Add New Client',
+    'add_new_promoter' => 'Add New Promoter',
+    'add_new_coordinator' => 'Add New Coordinator',
+    'create_salary_sheet' => 'Create Salary Sheet',
+];
