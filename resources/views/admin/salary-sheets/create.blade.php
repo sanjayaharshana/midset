@@ -2119,7 +2119,7 @@ function addPromoterRow() {
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
                 <div style="position: relative;">
                     <input type="text" class="table-input-small" name="rows[${nextRowNumber}][promoter_search]" placeholder="Search promoter by name/ID" oninput="handlePromoterSearchInput(${nextRowNumber}, this)" onfocus="showAllPromoters(${nextRowNumber}, this)" onblur="hidePromoterSuggestions(${nextRowNumber})">
-                    <div id="promoterSuggestions-${nextRowNumber}" class="promoter-suggestions" style="position: absolute; z-index: 9999; background: #fff; border: 1px solid #ddd; width: 100%; display: none; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                    <div id="promoterSuggestions-${nextRowNumber}" class="promoter-suggestions" style="display:none"></div>
                     <select class="table-input-small" name="rows[${nextRowNumber}][promoter_id]" onchange="updatePromoterDetails(${nextRowNumber}, this)" style="display:none">
                         <option value="">Select</option>
                     </select>
@@ -2304,6 +2304,36 @@ function updatePromoterDropdowns() {
 
 // Debounced inline AJAX search for promoters per row
 let promoterSearchDebounceTimers = {};
+let promoterSuggestionsPortalEl = null;
+let promoterSuggestionsActiveAnchor = null;
+let promoterSuggestionsActiveRowNum = null;
+
+function getPromoterPortal() {
+    if (!promoterSuggestionsPortalEl) {
+        promoterSuggestionsPortalEl = document.createElement('div');
+        promoterSuggestionsPortalEl.id = 'promoterSuggestionsPortal';
+        promoterSuggestionsPortalEl.style.position = 'absolute';
+        promoterSuggestionsPortalEl.style.zIndex = '100000';
+        promoterSuggestionsPortalEl.style.background = '#fff';
+        promoterSuggestionsPortalEl.style.border = '1px solid #ddd';
+        promoterSuggestionsPortalEl.style.maxHeight = '260px';
+        promoterSuggestionsPortalEl.style.overflowY = 'auto';
+        promoterSuggestionsPortalEl.style.boxShadow = '0 8px 14px rgba(0,0,0,0.12)';
+        promoterSuggestionsPortalEl.style.display = 'none';
+        document.body.appendChild(promoterSuggestionsPortalEl);
+    }
+    return promoterSuggestionsPortalEl;
+}
+
+function positionPromoterPortal(anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const portal = getPromoterPortal();
+    portal.style.minWidth = rect.width + 'px';
+    portal.style.left = (rect.left + scrollLeft) + 'px';
+    portal.style.top = (rect.bottom + scrollTop) + 'px';
+}
 
 function showAllPromoters(rowNum, inputEl) {
     const box = document.getElementById('promoterSuggestions-' + rowNum);
@@ -2314,6 +2344,8 @@ function showAllPromoters(rowNum, inputEl) {
     // If already selected (prefilled), do not auto-open on focus
     if (hiddenSelect && hiddenSelect.value) {
         if (box) { box.style.display = 'none'; }
+        const portal = getPromoterPortal();
+        portal.style.display = 'none';
         return;
     }
 
@@ -2324,16 +2356,18 @@ function showAllPromoters(rowNum, inputEl) {
     }
     
     // Show all promoters when focused
-    searchPromoters(rowNum, '', 20);
+    searchPromoters(rowNum, '', 20, inputEl);
 }
 
 function hidePromoterSuggestions(rowNum) {
     // Small delay to allow click on suggestion
     setTimeout(() => {
         const box = document.getElementById('promoterSuggestions-' + rowNum);
-        if (box) {
-            box.style.display = 'none';
-        }
+        if (box) { box.style.display = 'none'; }
+        const portal = getPromoterPortal();
+        portal.style.display = 'none';
+        promoterSuggestionsActiveAnchor = null;
+        promoterSuggestionsActiveRowNum = null;
     }, 150);
 }
 
@@ -2345,10 +2379,14 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.promoter-suggestions').forEach(el => {
             el.style.display = 'none';
         });
+        const portal = getPromoterPortal();
+        portal.style.display = 'none';
+        promoterSuggestionsActiveAnchor = null;
+        promoterSuggestionsActiveRowNum = null;
     }
 });
 
-function searchPromoters(rowNum, q, limit = 10) {
+function searchPromoters(rowNum, q, limit = 10, inputEl = null) {
     const box = document.getElementById('promoterSuggestions-' + rowNum);
     
     if (promoterSearchDebounceTimers[rowNum]) {
@@ -2369,12 +2407,16 @@ function searchPromoters(rowNum, q, limit = 10) {
             const items = (data && data.data) ? data.data : [];
 
             if (!items.length) {
-                box.innerHTML = '<div style="padding: 6px 8px; color: #666;">No results</div>';
-                box.style.display = 'block';
+                const portal = getPromoterPortal();
+                portal.innerHTML = '<div style="padding: 6px 8px; color: #666;">No results</div>';
+                if (inputEl) { positionPromoterPortal(inputEl); }
+                portal.style.display = 'block';
+                promoterSuggestionsActiveAnchor = inputEl;
+                promoterSuggestionsActiveRowNum = rowNum;
                 return;
             }
 
-            box.innerHTML = items.map(p => `
+            const html = items.map(p => `
                 <div class="promoter-suggestion-item" data-id="${p.id}" data-name="${p.promoter_name}" data-position="${p.position || ''}" data-position-id="${p.position_id || ''}" data-promoter-id="${p.promoter_id}" data-phone="${p.phone_no || ''}" data-id-card="${p.identity_card_no || ''}" data-bank="${p.bank_name || ''}" data-account="${p.bank_account_number || ''}" data-status="${p.status || ''}"
                     style="padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
                     <div style="font-weight: 600;">${p.promoter_name} <span style="color:#999; font-weight:400;">(${p.promoter_id})</span></div>
@@ -2382,25 +2424,32 @@ function searchPromoters(rowNum, q, limit = 10) {
                 </div>
             `).join('');
 
+            const portal = getPromoterPortal();
+            portal.innerHTML = html;
             // Attach item handlers (use mousedown to select before input blur)
-            box.querySelectorAll('.promoter-suggestion-item').forEach(item => {
+            portal.querySelectorAll('.promoter-suggestion-item').forEach(item => {
                 item.addEventListener('mousedown', (e) => {
                     e.preventDefault();
                     selectPromoterSuggestion(rowNum, item);
                 });
                 item.addEventListener('click', () => selectPromoterSuggestion(rowNum, item));
             });
-            box.style.display = 'block';
+            if (inputEl) { positionPromoterPortal(inputEl); }
+            portal.style.display = 'block';
+            promoterSuggestionsActiveAnchor = inputEl;
+            promoterSuggestionsActiveRowNum = rowNum;
         } catch (e) {
-            box.innerHTML = '<div style="padding: 6px 8px; color: #c00;">Search failed</div>';
-            box.style.display = 'block';
+            const portal = getPromoterPortal();
+            portal.innerHTML = '<div style="padding: 6px 8px; color: #c00;">Search failed</div>';
+            if (inputEl) { positionPromoterPortal(inputEl); }
+            portal.style.display = 'block';
         }
     }, q.length >= 2 ? 250 : 0); // No delay for showing all promoters
 }
 
 function handlePromoterSearchInput(rowNum, inputEl) {
     const q = inputEl.value.trim();
-    searchPromoters(rowNum, q, 10);
+    searchPromoters(rowNum, q, 10, inputEl);
 }
 // Expose to global scope for inline handlers
 if (typeof window !== 'undefined') {
@@ -2410,7 +2459,8 @@ if (typeof window !== 'undefined') {
 }
 
 function selectPromoterSuggestion(rowNum, el) {
-    const row = el.closest('tr');
+    const anchor = promoterSuggestionsActiveAnchor;
+    const row = anchor ? anchor.closest('tr') : null;
     if (!row) return;
     const hiddenSelect = row.querySelector(`select[name*='[promoter_id]']`);
     const nameInput = row.querySelector(`input[name*='[promoter_name]']`);
@@ -2467,6 +2517,10 @@ function selectPromoterSuggestion(rowNum, el) {
 
     searchBox.style.display = 'none';
     searchBox.innerHTML = '';
+    const portal = getPromoterPortal();
+    portal.style.display = 'none';
+    promoterSuggestionsActiveAnchor = null;
+    promoterSuggestionsActiveRowNum = null;
 
     // Recalculate dependent amounts
     calculateRowTotal(rowNum);
@@ -3439,6 +3493,19 @@ document.addEventListener('DOMContentLoaded', function() {
             closeAllowanceRuleModal();
         }
     });
+});
+
+// Reposition portal on scroll/resize if visible
+window.addEventListener('scroll', () => {
+    if (promoterSuggestionsPortalEl && promoterSuggestionsPortalEl.style.display === 'block' && promoterSuggestionsActiveAnchor) {
+        positionPromoterPortal(promoterSuggestionsActiveAnchor);
+    }
+}, true);
+
+window.addEventListener('resize', () => {
+    if (promoterSuggestionsPortalEl && promoterSuggestionsPortalEl.style.display === 'block' && promoterSuggestionsActiveAnchor) {
+        positionPromoterPortal(promoterSuggestionsActiveAnchor);
+    }
 });
 
 // JSON Import Functions
