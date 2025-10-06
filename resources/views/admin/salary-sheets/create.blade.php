@@ -2116,22 +2116,14 @@ function addPromoterRow() {
             <input type="text" class="table-input" name="rows[${nextRowNumber}][location]" placeholder="Location">
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${nextRowNumber}][promoter_id]" onchange="updatePromoterDetails(${nextRowNumber}, this)">
-                    <option value="">Select</option>
-                    ${promoters.map(promoter => {
-                        const positionName = promoter.position ? promoter.position.position_name : 'No Position';
-                        return `<option value="${promoter.id}"
-                                data-name="${promoter.promoter_name}"
-                                data-position="${positionName}"
-                                data-phone="${promoter.phone_no || ''}"
-                                data-id-card="${promoter.identity_card_no || ''}"
-                                data-bank="${promoter.bank_name || ''}"
-                                data-account="${promoter.bank_account_number || ''}"
-                                data-status="${promoter.status || 'inactive'}"
-                                data-position-id="${promoter.position_id || ''}">${promoter.promoter_id}</option>`;
-                    }).join('')}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${nextRowNumber}][promoter_search]" placeholder="Search promoter by name/ID" oninput="handlePromoterSearchInput(${nextRowNumber}, this)" onfocus="showAllPromoters(${nextRowNumber}, this)" onblur="hidePromoterSuggestions(${nextRowNumber})">
+                    <div id="promoterSuggestions-${nextRowNumber}" class="promoter-suggestions" style="position: absolute; z-index: 9999; background: #fff; border: 1px solid #ddd; width: 100%; display: none; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                    <select class="table-input-small" name="rows[${nextRowNumber}][promoter_id]" onchange="updatePromoterDetails(${nextRowNumber}, this)" style="display:none">
+                        <option value="">Select</option>
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${nextRowNumber}][promoter_name]" readonly data-tooltip="">
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][position]" readonly>
             </div>
@@ -2308,6 +2300,161 @@ function updatePromoterDropdowns() {
             }
         });
     });
+}
+
+// Debounced inline AJAX search for promoters per row
+let promoterSearchDebounceTimers = {};
+
+function showAllPromoters(rowNum, inputEl) {
+    const box = document.getElementById('promoterSuggestions-' + rowNum);
+    const q = inputEl.value.trim();
+    const row = inputEl.closest('tr');
+    const hiddenSelect = row ? row.querySelector(`select[name*='[promoter_id]']`) : null;
+
+    // If already selected (prefilled), do not auto-open on focus
+    if (hiddenSelect && hiddenSelect.value) {
+        if (box) { box.style.display = 'none'; }
+        return;
+    }
+
+    if (q.length >= 2) {
+        // If there's already a search term, use search
+        handlePromoterSearchInput(rowNum, inputEl);
+        return;
+    }
+    
+    // Show all promoters when focused
+    searchPromoters(rowNum, '', 20);
+}
+
+function hidePromoterSuggestions(rowNum) {
+    // Small delay to allow click on suggestion
+    setTimeout(() => {
+        const box = document.getElementById('promoterSuggestions-' + rowNum);
+        if (box) {
+            box.style.display = 'none';
+        }
+    }, 150);
+}
+
+// Hide any open suggestions when clicking outside
+document.addEventListener('click', (e) => {
+    const isSuggestion = e.target.closest('.promoter-suggestions');
+    const isSearchInput = e.target.closest('input[name*="[promoter_search]"]');
+    if (!isSuggestion && !isSearchInput) {
+        document.querySelectorAll('.promoter-suggestions').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+});
+
+function searchPromoters(rowNum, q, limit = 10) {
+    const box = document.getElementById('promoterSuggestions-' + rowNum);
+    
+    if (promoterSearchDebounceTimers[rowNum]) {
+        clearTimeout(promoterSearchDebounceTimers[rowNum]);
+    }
+
+    promoterSearchDebounceTimers[rowNum] = setTimeout(async () => {
+        try {
+            const exclude = getSelectedPromoterIds();
+            const params = new URLSearchParams({ q, limit: limit.toString() });
+            exclude.forEach(id => params.append('exclude[]', id));
+            const url = `${window.location.origin}${window.location.pathname.includes('/admin/') ? '' : ''}/admin/promoters/ajax/search?` + params.toString();
+
+            const res = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            const items = (data && data.data) ? data.data : [];
+
+            if (!items.length) {
+                box.innerHTML = '<div style="padding: 6px 8px; color: #666;">No results</div>';
+                box.style.display = 'block';
+                return;
+            }
+
+            box.innerHTML = items.map(p => `
+                <div class="promoter-suggestion-item" data-id="${p.id}" data-name="${p.promoter_name}" data-position="${p.position || ''}" data-position-id="${p.position_id || ''}" data-promoter-id="${p.promoter_id}" data-phone="${p.phone_no || ''}" data-id-card="${p.identity_card_no || ''}" data-bank="${p.bank_name || ''}" data-account="${p.bank_account_number || ''}" data-status="${p.status || ''}"
+                    style="padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                    <div style="font-weight: 600;">${p.promoter_name} <span style="color:#999; font-weight:400;">(${p.promoter_id})</span></div>
+                    <div style="font-size: 12px; color: #666;">${p.position || 'No Position'} · ${p.phone_no || ''}</div>
+                </div>
+            `).join('');
+
+            // Attach item handlers (use mousedown to select before input blur)
+            box.querySelectorAll('.promoter-suggestion-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectPromoterSuggestion(rowNum, item);
+                });
+                item.addEventListener('click', () => selectPromoterSuggestion(rowNum, item));
+            });
+            box.style.display = 'block';
+        } catch (e) {
+            box.innerHTML = '<div style="padding: 6px 8px; color: #c00;">Search failed</div>';
+            box.style.display = 'block';
+        }
+    }, q.length >= 2 ? 250 : 0); // No delay for showing all promoters
+}
+
+function handlePromoterSearchInput(rowNum, inputEl) {
+    const q = inputEl.value.trim();
+    searchPromoters(rowNum, q, 10);
+}
+// Expose to global scope for inline handlers
+if (typeof window !== 'undefined') {
+    window.handlePromoterSearchInput = handlePromoterSearchInput;
+    window.showAllPromoters = showAllPromoters;
+    window.hidePromoterSuggestions = hidePromoterSuggestions;
+}
+
+function selectPromoterSuggestion(rowNum, el) {
+    const row = el.closest('tr');
+    if (!row) return;
+    const hiddenSelect = row.querySelector(`select[name*='[promoter_id]']`);
+    const nameInput = row.querySelector(`input[name*='[promoter_name]']`);
+    const positionInput = row.querySelector(`input[name*='[position]']`);
+    const searchBox = row.querySelector(`#promoterSuggestions-${rowNum}`) || document.getElementById('promoterSuggestions-' + rowNum);
+    const searchInput = row.querySelector(`input[name*='[promoter_search]']`);
+
+    const option = document.createElement('option');
+    option.value = el.dataset.id;
+    option.selected = true;
+    option.dataset.name = el.dataset.name || '';
+    option.dataset.position = el.dataset.position || '';
+    option.dataset.phone = el.dataset.phone || '';
+    option.dataset.idCard = el.dataset.idCard || '';
+    option.dataset.bank = el.dataset.bank || '';
+    option.dataset.account = el.dataset.account || '';
+    option.dataset.status = el.dataset.status || '';
+    option.dataset.positionId = el.dataset.positionId || '';
+    option.textContent = el.dataset.promoterId || '';
+
+    hiddenSelect.innerHTML = '';
+    hiddenSelect.appendChild(option);
+
+    updatePromoterDetails(rowNum, hiddenSelect);
+
+    if (nameInput) nameInput.value = el.dataset.name || '';
+    if (positionInput) positionInput.value = el.dataset.position || '';
+    if (searchInput) searchInput.value = `${el.dataset.promoterId} - ${el.dataset.name}`;
+
+    searchBox.style.display = 'none';
+    searchBox.innerHTML = '';
+
+    // Recalculate dependent amounts
+    calculateRowTotal(rowNum);
+    calculateAttendanceAmount(rowNum);
+    calculateRowNet(rowNum);
+    calculateGrandTotal();
+
+    // Update other dropdowns for duplicate prevention
+    updatePromoterDropdowns();
+}
+// Expose to global scope for inline handlers
+if (typeof window !== 'undefined') {
+    window.selectPromoterSuggestion = selectPromoterSuggestion;
 }
 
 function validatePromoterSelection(selectElement) {
@@ -3247,13 +3394,9 @@ function clearAllRows() {
 function saveSalarySheet() {
     console.log('=== SAVE SALARY SHEET FUNCTION CALLED ===');
     console.log('Save function called'); // Debug log
-
-    const form = document.getElementById('salarySheetForm');
-    console.log('Form element:', form);
-    console.log('Form action:', form ? form.action : 'Form not found');
-    console.log('Form method:', form ? form.method : 'Form not found');
-    console.log('Expected route: admin.salary.enforce');
-    form.submit();
+    
+    // Open the modal instead of directly submitting
+    openSalarySheetSaveModal();
 }
 
 // Add first row automatically
@@ -4674,5 +4817,228 @@ document.addEventListener('click', function(e) {
 
         // Add this function to window for easy access
         window.debugExpensesCalculation = debugExpensesCalculation;
+</script>
+
+<!-- Salary Sheet Save Modal -->
+<div id="salarySheetSaveModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; width: 90%;">
+        <div class="modal-header">
+            <h3>Save Salary Sheet</h3>
+            <span class="close" id="salarySheetSaveCloseBtn">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 1.5rem;">
+                <p style="color: #6b7280; margin-bottom: 1rem;">Please select the appropriate status for this salary sheet before saving.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <!-- Job Status -->
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Job Status</label>
+                        <select id="jobStatusSelect" class="form-control" style="width: 100%;">
+                            <option value="">Select Job Status</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="on_hold">On Hold</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Salary Sheet Status -->
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Salary Sheet Status</label>
+                        <select id="salarySheetStatusSelect" class="form-control" style="width: 100%;" onchange="updateStatusDescription()">
+                            <option value="">Select Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="complete">Complete</option>
+                            <option value="reject">Reject</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Status Description -->
+                <div id="statusDescription" style="margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 0.5rem; border-left: 4px solid #3b82f6;">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #374151; font-size: 0.9rem; font-weight: 600;">Status Information</h4>
+                    <p id="statusDescriptionText" style="margin: 0; color: #6b7280; font-size: 0.85rem; line-height: 1.4;">
+                        Please select a salary sheet status to view detailed information about the status change process.
+                    </p>
+                </div>
+                
+                <!-- Additional Notes -->
+                <div style="margin-top: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Additional Notes (Optional)</label>
+                    <textarea id="saveNotes" class="form-control" rows="3" placeholder="Add any additional notes about this salary sheet..." style="width: 100%; resize: vertical;"></textarea>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeSalarySheetSaveModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSaveSalarySheet()">Save Salary Sheet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Salary Sheet Save Modal Functions
+function openSalarySheetSaveModal() {
+    document.getElementById('salarySheetSaveModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    // Reset form
+    document.getElementById('jobStatusSelect').value = '';
+    document.getElementById('salarySheetStatusSelect').value = '';
+    document.getElementById('saveNotes').value = '';
+    updateStatusDescription();
+}
+
+function closeSalarySheetSaveModal() {
+    document.getElementById('salarySheetSaveModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function updateStatusDescription() {
+    const statusSelect = document.getElementById('salarySheetStatusSelect');
+    const descriptionText = document.getElementById('statusDescriptionText');
+    const statusDescription = document.getElementById('statusDescription');
+    
+    const status = statusSelect.value;
+    
+    switch(status) {
+        case 'complete':
+            descriptionText.innerHTML = `
+                <strong>Complete Status:</strong><br>
+                • The salary sheet will be moved to reporters and officers<br>
+                • No further edits can be made to this salary sheet<br>
+                • This status indicates final approval and processing<br>
+                • Use this status when all calculations are verified and ready for payment
+            `;
+            statusDescription.style.borderLeftColor = '#10b981';
+            break;
+            
+        case 'draft':
+            descriptionText.innerHTML = `
+                <strong>Draft Status:</strong><br>
+                • You can continue to edit and make changes<br>
+                • This status allows for ongoing modifications<br>
+                • Perfect for work-in-progress salary sheets<br>
+                • Can be changed to Complete or Reject status later
+            `;
+            statusDescription.style.borderLeftColor = '#f59e0b';
+            break;
+            
+        case 'reject':
+            descriptionText.innerHTML = `
+                <strong>Reject Status:</strong><br>
+                • You can edit and resubmit the salary sheet<br>
+                • This status indicates issues that need to be addressed<br>
+                • Allows for corrections and modifications<br>
+                • Can be changed to Draft or Complete after corrections
+            `;
+            statusDescription.style.borderLeftColor = '#ef4444';
+            break;
+            
+        default:
+            descriptionText.innerHTML = 'Please select a salary sheet status to view detailed information about the status change process.';
+            statusDescription.style.borderLeftColor = '#3b82f6';
+    }
+}
+
+function confirmSaveSalarySheet() {
+    const jobStatus = document.getElementById('jobStatusSelect').value;
+    const salarySheetStatus = document.getElementById('salarySheetStatusSelect').value;
+    const notes = document.getElementById('saveNotes').value;
+    
+    // Validation
+    if (!jobStatus) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Job Status Required',
+            text: 'Please select a job status before saving.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    if (!salarySheetStatus) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Salary Sheet Status Required',
+            text: 'Please select a salary sheet status before saving.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    // Add hidden inputs to the form
+    const form = document.getElementById('salarySheetForm');
+    
+    // Remove existing hidden inputs if they exist
+    const existingJobStatus = form.querySelector('input[name="job_status"]');
+    const existingSalarySheetStatus = form.querySelector('input[name="salary_sheet_status"]');
+    const existingNotes = form.querySelector('input[name="save_notes"]');
+    
+    if (existingJobStatus) existingJobStatus.remove();
+    if (existingSalarySheetStatus) existingSalarySheetStatus.remove();
+    if (existingNotes) existingNotes.remove();
+    
+    // Add new hidden inputs
+    const jobStatusInput = document.createElement('input');
+    jobStatusInput.type = 'hidden';
+    jobStatusInput.name = 'job_status';
+    jobStatusInput.value = jobStatus;
+    form.appendChild(jobStatusInput);
+    
+    const salarySheetStatusInput = document.createElement('input');
+    salarySheetStatusInput.type = 'hidden';
+    salarySheetStatusInput.name = 'salary_sheet_status';
+    salarySheetStatusInput.value = salarySheetStatus;
+    form.appendChild(salarySheetStatusInput);
+    
+    const notesInput = document.createElement('input');
+    notesInput.type = 'hidden';
+    notesInput.name = 'save_notes';
+    notesInput.value = notes;
+    form.appendChild(notesInput);
+    
+    // Close modal
+    closeSalarySheetSaveModal();
+    
+    // Show confirmation
+    Swal.fire({
+        icon: 'info',
+        title: 'Saving Salary Sheet',
+        text: `Saving with Job Status: ${jobStatus} and Salary Sheet Status: ${salarySheetStatus}`,
+        showConfirmButton: false,
+        timer: 1500
+    });
+    
+    // Submit the form
+    setTimeout(() => {
+        form.submit();
+    }, 1500);
+}
+
+// Event listeners for the modal
+document.addEventListener('DOMContentLoaded', function() {
+    // Close modal when clicking the close button
+    document.getElementById('salarySheetSaveCloseBtn').addEventListener('click', closeSalarySheetSaveModal);
+    
+    // Close modal when clicking outside
+    document.getElementById('salarySheetSaveModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeSalarySheetSaveModal();
+        }
+    });
+    
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('salarySheetSaveModal');
+            if (modal && modal.style.display === 'block') {
+                closeSalarySheetSaveModal();
+            }
+        }
+    });
+});
 </script>
 @endsection

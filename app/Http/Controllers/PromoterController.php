@@ -20,6 +20,50 @@ class PromoterController extends Controller
     }
 
     /**
+     * Lightweight AJAX search for promoters by name or ID
+     */
+    public function ajaxSearch(Request $request)
+    {
+        $q = trim($request->get('q', ''));
+        $excludeIds = (array) $request->get('exclude', []);
+        $limit = (int) ($request->get('limit', 10));
+        if ($limit <= 0 || $limit > 50) { $limit = 10; }
+
+        if ($q === '') {
+            return response()->json(['data' => []]);
+        }
+
+        $results = Promoter::with('position')
+            ->when(!empty($excludeIds), function ($query) use ($excludeIds) {
+                $query->whereNotIn('id', $excludeIds);
+            })
+            ->where(function($query) use ($q) {
+                $query->where('promoter_name', 'like', "%{$q}%")
+                    ->orWhere('promoter_id', 'like', "%{$q}%")
+                    ->orWhere('phone_no', 'like', "%{$q}%");
+            })
+            ->orderBy('promoter_name')
+            ->limit($limit)
+            ->get()
+            ->map(function($p) {
+                return [
+                    'id' => $p->id,
+                    'promoter_id' => $p->promoter_id,
+                    'promoter_name' => $p->promoter_name,
+                    'position' => optional($p->position)->position_name,
+                    'position_id' => $p->position_id,
+                    'phone_no' => $p->phone_no,
+                    'identity_card_no' => $p->identity_card_no,
+                    'bank_name' => $p->bank_name,
+                    'bank_account_number' => $p->bank_account_number,
+                    'status' => $p->status,
+                ];
+            });
+
+        return response()->json(['data' => $results]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
