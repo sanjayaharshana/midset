@@ -2418,6 +2418,31 @@ function selectPromoterSuggestion(rowNum, el) {
     const searchBox = row.querySelector(`#promoterSuggestions-${rowNum}`) || document.getElementById('promoterSuggestions-' + rowNum);
     const searchInput = row.querySelector(`input[name*='[promoter_search]']`);
 
+    // Duplicate detection: if this promoter already selected in another row, highlight that row and abort
+    const targetPromoterDbId = el.dataset.id;
+    if (targetPromoterDbId) {
+        const allSelects = document.querySelectorAll("select[name*='[promoter_id]']");
+        for (const sel of allSelects) {
+            if (sel === hiddenSelect) continue;
+            if (sel.value && sel.value === targetPromoterDbId) {
+                const existingRow = sel.closest('tr');
+                if (existingRow) {
+                    existingRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const originalBg = existingRow.style.backgroundColor;
+                    existingRow.style.transition = 'background-color 0.6s ease';
+                    existingRow.style.backgroundColor = '#fff3cd'; // soft warning yellow
+                    setTimeout(() => { existingRow.style.backgroundColor = originalBg || ''; }, 1200);
+                }
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Duplicate Promoter', text: 'This promoter is already added. Highlighted the existing row.' });
+                }
+                // Do not set duplicate
+                if (searchBox) { searchBox.style.display = 'none'; searchBox.innerHTML = ''; }
+                return;
+            }
+        }
+    }
+
     const option = document.createElement('option');
     option.value = el.dataset.id;
     option.selected = true;
