@@ -111,18 +111,21 @@ class Job extends Model
         $year = date('y'); // 2-digit year
         $clientCode = $client->short_code;
         
-        // Get the last job number for this client this year
-        $lastJob = self::where('job_number', 'like', $year . '/' . $clientCode . '/%')
-            ->orderBy('job_number', 'desc')
-            ->first();
+        // Get all job numbers for this year and find the highest sequential number
+        $jobs = self::where('job_number', 'like', $year . '/%')
+            ->pluck('job_number')
+            ->toArray();
 
-        if ($lastJob) {
-            // Extract the number part and increment
-            $lastNumber = (int) substr($lastJob->job_number, -3);
-            $nextNumber = $lastNumber + 1;
-        } else {
-            $nextNumber = 1;
+        $maxNumber = 0;
+        foreach ($jobs as $jobNumber) {
+            // Extract the number part (last 3 digits)
+            $number = (int) substr($jobNumber, -3);
+            if ($number > $maxNumber) {
+                $maxNumber = $number;
+            }
         }
+
+        $nextNumber = $maxNumber + 1;
 
         return sprintf('%s/%s/%03d', $year, $clientCode, $nextNumber);
     }

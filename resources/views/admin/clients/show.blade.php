@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'Client Details')
-@section('page-title', 'Client Details')
+@section('title', 'Brand Details')
+@section('page-title', 'Brand Details')
 
 @section('breadcrumbs')
     <span class="breadcrumb-separator">›</span>
-    <a href="{{ route('admin.clients.index') }}" class="breadcrumb-item">Clients</a>
+    <a href="{{ route('admin.clients.index') }}" class="breadcrumb-item">Brands</a>
     <span class="breadcrumb-separator">›</span>
     <span class="breadcrumb-item active">Details</span>
 @endsection
@@ -14,7 +14,7 @@
 <div class="card">
     <div class="card-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Client Information</h3>
+            <h3>Brand Information</h3>
             <div style="display: flex; gap: 0.5rem;">
                 @can('edit clients')
                     <a href="{{ route('admin.clients.edit', $client) }}" class="btn btn-warning">
@@ -22,7 +22,7 @@
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
-                        Edit Client
+                        Edit Brand
                     </a>
                 @endcan
                 <a href="{{ route('admin.clients.index') }}" class="btn btn-secondary">

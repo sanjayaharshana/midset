@@ -32,7 +32,7 @@ class RolePermissionSeeder extends Seeder
             'edit roles',
             'delete roles',
             
-            // Client Management
+            // Brand Management
             'view clients',
             'create clients',
             'edit clients',

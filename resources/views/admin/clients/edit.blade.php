@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Client')
-@section('page-title', 'Edit Client')
+@section('title', 'Edit Brand')
+@section('page-title', 'Edit Brand')
 
 @section('breadcrumbs')
     <span class="breadcrumb-separator">›</span>
-    <a href="{{ route('admin.clients.index') }}" class="breadcrumb-item">Clients</a>
+    <a href="{{ route('admin.clients.index') }}" class="breadcrumb-item">Brands</a>
     <span class="breadcrumb-separator">›</span>
     <span class="breadcrumb-item active">Edit</span>
 @endsection
@@ -13,7 +13,7 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3>Edit Client Information</h3>
+        <h3>Edit Brand Information</h3>
     </div>
     <div class="card-body">
         <form action="{{ route('admin.clients.update', $client) }}" method="POST">
@@ -22,7 +22,7 @@
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <div class="form-group">
-                    <label for="name" class="form-label">Client Name *</label>
+                    <label for="name" class="form-label">Brand Name *</label>
                     <input type="text" class="form-control @error('name') is-invalid @enderror" 
                            id="name" name="name" value="{{ old('name', $client->name) }}" required>
                     @error('name')
@@ -142,7 +142,7 @@
             <div class="form-group" style="margin-bottom: 1.5rem;">
                 <label for="notes" class="form-label">Notes</label>
                 <textarea class="form-control @error('notes') is-invalid @enderror" 
-                          id="notes" name="notes" rows="4" placeholder="Additional notes about the client...">{{ old('notes', $client->notes) }}</textarea>
+                          id="notes" name="notes" rows="4" placeholder="Additional notes about the brand...">{{ old('notes', $client->notes) }}</textarea>
                 @error('notes')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -156,7 +156,7 @@
                         <polyline points="17,21 17,13 7,13 7,21"></polyline>
                         <polyline points="7,3 7,8 15,8"></polyline>
                     </svg>
-                    Update Client
+                    Update Brand
                 </button>
             </div>
         </form>

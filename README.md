@@ -10,7 +10,7 @@ A comprehensive Laravel-based salary sheet management system designed for tracki
 - **Salary Sheet Creation**: Generate salary sheets with attendance tracking
 - **Attendance Tracking**: Daily attendance recording with automatic calculations
 - **Coordinator Management**: Assign coordinators and track coordination fees
-- **Client Management**: Manage client companies and their details
+- **Brand Management**: Manage brand companies and their details
 
 ### Advanced Features
 - **Position-wise Salary Rules**: Set different salary rates for different promoter positions

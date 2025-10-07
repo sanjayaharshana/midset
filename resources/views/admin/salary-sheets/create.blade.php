@@ -2139,13 +2139,14 @@ function addPromoterRow() {
             ${generatePaymentRowHTML(nextRowNumber, getCurrentJobAllowances())}
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${nextRowNumber}][coordinator_id]" onchange="updateCoordinatorDisplay(${nextRowNumber}, this)">
-                    <option value="">Select</option>
-                    ${coordinators.map(coordinator =>
-                        `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}">${coordinator.coordinator_id}</option>`
-                    ).join('')}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${nextRowNumber}][coordinator_search]" placeholder="Search coordinator by name/ID" oninput="handleCoordinatorSearchInput(${nextRowNumber}, this)" onfocus="showAllCoordinators(${nextRowNumber}, this)" onblur="hideCoordinatorSuggestions(${nextRowNumber})">
+                    <div id="coordinatorSuggestions-${nextRowNumber}" class="coordinator-suggestions" style="display:none"></div>
+                    <select class="table-input-small" name="rows[${nextRowNumber}][coordinator_id]" onchange="updateCoordinatorDisplay(${nextRowNumber}, this)" style="display:none">
+                        <option value="">Select</option>
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][current_coordinator]" readonly>
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days">
             </div>
@@ -2451,11 +2452,158 @@ function handlePromoterSearchInput(rowNum, inputEl) {
     const q = inputEl.value.trim();
     searchPromoters(rowNum, q, 10, inputEl);
 }
+// BEGIN: Coordinator search functions for create view
+let coordinatorSearchDebounceTimers = {};
+let coordinatorSuggestionsPortalEl = null;
+let coordinatorSuggestionsActiveAnchor = null;
+let coordinatorSuggestionsActiveRowNum = null;
+
+function getCoordinatorPortal() {
+    if (!coordinatorSuggestionsPortalEl) {
+        coordinatorSuggestionsPortalEl = document.createElement('div');
+        coordinatorSuggestionsPortalEl.id = 'coordinatorSuggestionsPortal';
+        coordinatorSuggestionsPortalEl.style.position = 'absolute';
+        coordinatorSuggestionsPortalEl.style.zIndex = '100000';
+        coordinatorSuggestionsPortalEl.style.background = '#fff';
+        coordinatorSuggestionsPortalEl.style.border = '1px solid #ddd';
+        coordinatorSuggestionsPortalEl.style.maxHeight = '260px';
+        coordinatorSuggestionsPortalEl.style.overflowY = 'auto';
+        coordinatorSuggestionsPortalEl.style.boxShadow = '0 8px 14px rgba(0,0,0,0.12)';
+        coordinatorSuggestionsPortalEl.style.display = 'none';
+        document.body.appendChild(coordinatorSuggestionsPortalEl);
+    }
+    return coordinatorSuggestionsPortalEl;
+}
+
+function positionCoordinatorPortal(anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const portal = getCoordinatorPortal();
+    portal.style.minWidth = rect.width + 'px';
+    portal.style.left = (rect.left + scrollLeft) + 'px';
+    portal.style.top = (rect.bottom + scrollTop) + 'px';
+}
+
+function showAllCoordinators(rowNum, inputEl) {
+    const q = inputEl.value.trim();
+    const row = inputEl.closest('tr');
+    const hiddenSelect = row ? row.querySelector(`select[name*='[coordinator_id]']`) : null;
+    if (hiddenSelect && hiddenSelect.value) {
+        const portal = getCoordinatorPortal();
+        portal.style.display = 'none';
+        return;
+    }
+    if (q.length >= 2) {
+        handleCoordinatorSearchInput(rowNum, inputEl);
+        return;
+    }
+    searchCoordinators(rowNum, '', 20, inputEl);
+}
+
+function hideCoordinatorSuggestions(rowNum) {
+    setTimeout(() => {
+        const portal = getCoordinatorPortal();
+        portal.style.display = 'none';
+        coordinatorSuggestionsActiveAnchor = null;
+        coordinatorSuggestionsActiveRowNum = null;
+    }, 150);
+}
+
+function searchCoordinators(rowNum, q, limit = 10, inputEl = null) {
+    if (coordinatorSearchDebounceTimers[rowNum]) {
+        clearTimeout(coordinatorSearchDebounceTimers[rowNum]);
+    }
+    coordinatorSearchDebounceTimers[rowNum] = setTimeout(async () => {
+        try {
+            const params = new URLSearchParams({ q, limit: limit.toString() });
+            const url = `${window.location.origin}${window.location.pathname.includes('/admin/') ? '' : ''}/admin/coordinators/ajax/search?` + params.toString();
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            const items = (data && data.data) ? data.data : [];
+            const portal = getCoordinatorPortal();
+            if (!items.length) {
+                portal.innerHTML = '<div style="padding: 6px 8px; color: #666;">No results</div>';
+                if (inputEl) { positionCoordinatorPortal(inputEl); }
+                portal.style.display = 'block';
+                coordinatorSuggestionsActiveAnchor = inputEl;
+                coordinatorSuggestionsActiveRowNum = rowNum;
+                return;
+            }
+            portal.innerHTML = items.map(c => `
+                <div class="coordinator-suggestion-item" data-id="${c.id}" data-name="${c.coordinator_name}" data-coordinator-id="${c.coordinator_id}" data-phone="${c.phone_no || ''}" data-nic="${c.nic_no || ''}" data-bank="${c.bank_name || ''}" data-account="${c.account_number || ''}" data-status="${c.status || ''}"
+                    style="padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                    <div style="font-weight: 600;">${c.coordinator_id} - ${c.coordinator_name}</div>
+                    <div style="font-size: 12px; color: #666;">${c.phone_no || ''}</div>
+                </div>
+            `).join('');
+            portal.querySelectorAll('.coordinator-suggestion-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectCoordinatorSuggestion(rowNum, item);
+                });
+                item.addEventListener('click', () => selectCoordinatorSuggestion(rowNum, item));
+            });
+            if (inputEl) { positionCoordinatorPortal(inputEl); }
+            portal.style.display = 'block';
+            coordinatorSuggestionsActiveAnchor = inputEl;
+            coordinatorSuggestionsActiveRowNum = rowNum;
+        } catch (e) {
+            const portal = getCoordinatorPortal();
+            portal.innerHTML = '<div style="padding: 6px 8px; color: #c00;">Search failed</div>';
+            if (inputEl) { positionCoordinatorPortal(inputEl); }
+            portal.style.display = 'block';
+        }
+    }, q.length >= 2 ? 250 : 0);
+}
+
+function handleCoordinatorSearchInput(rowNum, inputEl) {
+    const q = inputEl.value.trim();
+    searchCoordinators(rowNum, q, 10, inputEl);
+}
+
+function selectCoordinatorSuggestion(rowNum, el) {
+    const anchor = coordinatorSuggestionsActiveAnchor;
+    const row = anchor ? anchor.closest('tr') : null;
+    if (!row) return;
+    const hiddenSelect = row.querySelector(`select[name*='[coordinator_id]']`);
+    const nameInput = row.querySelector(`input[name*='[coordinator_name]'], input[name*='[current_coordinator]']`);
+    const searchInput = row.querySelector(`input[name*='[coordinator_search]']`);
+
+    const option = document.createElement('option');
+    option.value = el.dataset.id;
+    option.selected = true;
+    option.dataset.name = el.dataset.name || '';
+    option.textContent = el.dataset.coordinatorId || '';
+
+    hiddenSelect.innerHTML = '';
+    hiddenSelect.appendChild(option);
+
+    updateCoordinatorDisplay(rowNum, hiddenSelect);
+
+    if (nameInput) nameInput.value = el.dataset.name || '';
+    if (searchInput) searchInput.value = `${el.dataset.coordinatorId} - ${el.dataset.name}`;
+
+    const portal = getCoordinatorPortal();
+    portal.style.display = 'none';
+    coordinatorSuggestionsActiveAnchor = null;
+    coordinatorSuggestionsActiveRowNum = null;
+
+    // Recalculate dependent amounts
+    if (typeof calculateGrandTotal === 'function') {
+        calculateGrandTotal();
+    }
+}
+// END: Coordinator search functions for create view
+
 // Expose to global scope for inline handlers
 if (typeof window !== 'undefined') {
     window.handlePromoterSearchInput = handlePromoterSearchInput;
     window.showAllPromoters = showAllPromoters;
     window.hidePromoterSuggestions = hidePromoterSuggestions;
+    window.handleCoordinatorSearchInput = handleCoordinatorSearchInput;
+    window.showAllCoordinators = showAllCoordinators;
+    window.hideCoordinatorSuggestions = hideCoordinatorSuggestions;
 }
 
 function selectPromoterSuggestion(rowNum, el) {
@@ -3434,13 +3582,15 @@ function loadSalarySheetAsRow(sheet, index) {
             })}
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${index}][coordinator_id]" onchange="updateCoordinatorDisplay(${index}, this)">
-                    <option value="">Select</option>
-                    ${coordinators.map(coordinator =>
-                        `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}" ${coordinator.id == sheet.current_coordinator_id ? 'selected' : ''}>${coordinator.coordinator_id}</option>`
-                    ).join('')}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${index}][coordinator_search]" placeholder="Search coordinator by name/ID" value="${coordinator ? coordinator.coordinator_id + ' - ' + coordinator.coordinator_name : ''}" oninput="handleCoordinatorSearchInput(${index}, this)" onfocus="showAllCoordinators(${index}, this)" onblur="hideCoordinatorSuggestions(${index})">
+                    <div id="coordinatorSuggestions-${index}" class="coordinator-suggestions" style="display:none"></div>
+                    <select class="table-input-small" name="rows[${index}][coordinator_id]" onchange="updateCoordinatorDisplay(${index}, this)" style="display:none">
+                        <option value="">Select</option>
+                        ${coordinator ? `<option value="${coordinator.id}" selected data-name="${coordinator.coordinator_name}">${coordinator.coordinator_id}</option>` : ''}
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][coordinator_name]" readonly value="${coordinatorName}">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days" value="${sheet.coordination_fee || 0}">
             </div>
@@ -3720,15 +3870,18 @@ function addPromoterRowFromJson(rowData, index) {
             })}
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${index + 1}][coordinator_id]" onchange="updateCoordinatorDisplay(${index + 1}, this)">
-                    <option value="">Select</option>
-                    ${coordinators.map(coordinator => {
-                        const selected = (coordinator.id == rowData.coordinator_id || coordinator.id == parseInt(rowData.coordinator_id)) ? 'selected' : '';
-                        console.log(`Coordinator comparison: coordinator.id=${coordinator.id}, rowData.coordinator_id=${rowData.coordinator_id}, selected=${selected}`);
-                        return `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}" ${selected}>${coordinator.coordinator_id}</option>`;
-                    }).join('')}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${index + 1}][coordinator_search]" placeholder="Search coordinator by name/ID" value="${rowData.coordinator_id && rowData.current_coordinator ? rowData.coordinator_id + ' - ' + rowData.current_coordinator : ''}" oninput="handleCoordinatorSearchInput(${index + 1}, this)" onfocus="showAllCoordinators(${index + 1}, this)" onblur="hideCoordinatorSuggestions(${index + 1})">
+                    <div id="coordinatorSuggestions-${index + 1}" class="coordinator-suggestions" style="display:none"></div>
+                    <select class="table-input-small" name="rows[${index + 1}][coordinator_id]" onchange="updateCoordinatorDisplay(${index + 1}, this)" style="display:none">
+                        <option value="">Select</option>
+                        ${rowData.coordinator_id ? coordinators.map(coordinator => {
+                            const selected = (coordinator.id == rowData.coordinator_id || coordinator.id == parseInt(rowData.coordinator_id)) ? 'selected' : '';
+                            return `<option value="${coordinator.id}" data-name="${coordinator.coordinator_name}" ${selected}>${coordinator.coordinator_id}</option>`;
+                        }).join('') : ''}
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][current_coordinator]" readonly value="${rowData.current_coordinator || ''}">
                 <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days" value="${rowData.coordination_fee || 0}">
             </div>

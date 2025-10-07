@@ -171,4 +171,45 @@ class CoordinatorController extends Controller
         return redirect()->route('admin.coordinators.index')
             ->with('success', 'Coordinator ' . $coordinatorId . ' deleted successfully.');
     }
+
+    /**
+     * Lightweight AJAX search for coordinators by name or ID
+     */
+    public function ajaxSearch(Request $request)
+    {
+        $q = trim($request->get('q', ''));
+        $excludeIds = (array) $request->get('exclude', []);
+        $limit = (int) ($request->get('limit', 10));
+        if ($limit <= 0 || $limit > 50) { $limit = 10; }
+
+        if ($q === '') {
+            return response()->json(['data' => []]);
+        }
+
+        $results = Coordinator::when(!empty($excludeIds), function ($query) use ($excludeIds) {
+                $query->whereNotIn('id', $excludeIds);
+            })
+            ->where(function($query) use ($q) {
+                $query->where('coordinator_name', 'like', "%{$q}%")
+                    ->orWhere('coordinator_id', 'like', "%{$q}%")
+                    ->orWhere('phone_no', 'like', "%{$q}%");
+            })
+            ->orderBy('coordinator_name')
+            ->limit($limit)
+            ->get()
+            ->map(function($c) {
+                return [
+                    'id' => $c->id,
+                    'coordinator_id' => $c->coordinator_id,
+                    'coordinator_name' => $c->coordinator_name,
+                    'phone_no' => $c->phone_no,
+                    'nic_no' => $c->nic_no,
+                    'bank_name' => $c->bank_name,
+                    'account_number' => $c->account_number,
+                    'status' => $c->status,
+                ];
+            });
+
+        return response()->json(['data' => $results]);
+    }
 }

@@ -41,8 +41,8 @@ class ClientController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'short_code' => 'required|string|size:3|unique:clients,short_code|regex:/^[A-Z]{3}$/',
-            'email' => 'required|email|unique:clients,email',
+            'short_code' => 'required|string|size:3|regex:/^[A-Z]{3}$/',
+            'email' => 'required|email',
             'phone' => 'nullable|string|max:20',
             'company_name' => 'nullable|string|max:255',
             'company_address' => 'nullable|string',
@@ -63,7 +63,7 @@ class ClientController extends Controller
         Client::create($request->all());
 
         return redirect()->route('admin.clients.index')
-            ->with('success', 'Client created successfully.');
+            ->with('success', 'Brand created successfully.');
     }
 
     /**
@@ -89,8 +89,8 @@ class ClientController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'short_code' => 'required|string|size:3|unique:clients,short_code,' . $client->id . '|regex:/^[A-Z]{3}$/',
-            'email' => 'required|email|unique:clients,email,' . $client->id,
+            'short_code' => 'required|string|size:3|regex:/^[A-Z]{3}$/',
+            'email' => 'required|email',
             'phone' => 'nullable|string|max:20',
             'company_name' => 'nullable|string|max:255',
             'company_address' => 'nullable|string',
@@ -111,7 +111,7 @@ class ClientController extends Controller
         $client->update($request->all());
 
         return redirect()->route('admin.clients.index')
-            ->with('success', 'Client updated successfully.');
+            ->with('success', 'Brand updated successfully.');
     }
 
     /**
@@ -122,6 +122,6 @@ class ClientController extends Controller
         $client->delete();
 
         return redirect()->route('admin.clients.index')
-            ->with('success', 'Client deleted successfully.');
+            ->with('success', 'Brand deleted successfully.');
     }
 }

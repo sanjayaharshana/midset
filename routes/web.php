@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
     // Role Management routes
     Route::resource('admin/roles', RoleManagementController::class)->names('admin.roles');
 
-    // Client Management routes
+    // Brand Management routes
     Route::resource('admin/clients', ClientController::class)->names('admin.clients');
 
     // Job Management routes
@@ -70,6 +70,8 @@ Route::middleware('auth')->group(function () {
     // Promoter Management routes
     Route::resource('admin/promoters', PromoterController::class)->names('admin.promoters');
     Route::get('admin/promoters/ajax/search', [PromoterController::class, 'ajaxSearch'])->name('admin.promoters.ajax.search');
+    Route::resource('admin/coordinators', CoordinatorController::class)->names('admin.coordinators');
+    Route::get('admin/coordinators/ajax/search', [CoordinatorController::class, 'ajaxSearch'])->name('admin.coordinators.ajax.search');
     Route::post('admin/promoters/import-csv', [PromoterController::class, 'importCsv'])->name('admin.promoters.import-csv');
     Route::get('admin/promoters/{promoter}/salary-slip/{itemId}/print', [PromoterController::class, 'printSalarySlip'])->name('admin.promoters.salary-slip.print');
 
