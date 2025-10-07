@@ -3397,23 +3397,23 @@ function loadSalarySheetAsRow(sheet, index) {
             <input type="text" class="table-input" name="rows[${index}][location]" value="${sheet.location || ''}" placeholder="Location">
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${index}][promoter_id]" onchange="updatePromoterDetails(${index}, this)">
-                    <option value="">Select</option>
-                    ${promoters.map(p => {
-                        const positionName = p.position ? p.position.position_name : 'No Position';
-                        return `<option value="${p.id}"
-                                data-name="${p.promoter_name}"
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${index}][promoter_search]" placeholder="Search promoter by name/ID" value="${promoter ? promoter.promoter_id + ' - ' + promoter.promoter_name : ''}" oninput="handlePromoterSearchInput(${index}, this)" onfocus="showAllPromoters(${index}, this)" onblur="hidePromoterSuggestions(${index})">
+                    <div id="promoterSuggestions-${index}" class="promoter-suggestions" style="display:none"></div>
+                    <select class="table-input-small" name="rows[${index}][promoter_id]" onchange="updatePromoterDetails(${index}, this)" style="display:none">
+                        <option value="">Select</option>
+                        ${promoter ? `<option value="${promoter.id}" selected
+                                data-name="${promoter.promoter_name}"
                                 data-position="${positionName}"
-                                data-phone="${p.phone_no || ''}"
-                                data-id-card="${p.identity_card_no || ''}"
-                                data-bank="${p.bank_name || ''}"
-                                data-account="${p.bank_account_number || ''}"
-                                data-status="${p.status || 'inactive'}"
-                                data-position-id="${p.position_id || ''}"
-                                ${p.id == sheet.promoter_id ? 'selected' : ''}>${p.promoter_id}</option>`;
-                    }).join('')}
-                </select>
+                                data-phone="${promoter.phone_no || ''}"
+                                data-id-card="${promoter.identity_card_no || ''}"
+                                data-bank="${promoter.bank_name || ''}"
+                                data-account="${promoter.bank_account_number || ''}"
+                                data-status="${promoter.status || 'inactive'}"
+                                data-position-id="${promoter.position_id || ''}">${promoter.promoter_id}</option>` : ''}
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${index}][promoter_name]" readonly value="${promoterName}" data-tooltip="">
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][position]" readonly value="${positionName}">
             </div>
@@ -3677,24 +3677,28 @@ function addPromoterRowFromJson(rowData, index) {
             <input type="text" class="table-input" name="rows[${index + 1}][location]" placeholder="Location" value="${rowData.location || ''}">
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${index + 1}][promoter_id]" onchange="updatePromoterDetails(${index + 1}, this)">
-                    <option value="">Select</option>
-                    ${promoters.map(promoter => {
-                        const positionName = promoter.position ? promoter.position.position_name : 'No Position';
-                        const selected = promoter.id == rowData.promoter_id ? 'selected' : '';
-                        return `<option value="${promoter.id}"
-                                data-name="${promoter.promoter_name}"
-                                data-position="${positionName}"
-                                data-phone="${promoter.phone_no || ''}"
-                                data-id-card="${promoter.identity_card_no || ''}"
-                                data-bank="${promoter.bank_name || ''}"
-                                data-account="${promoter.bank_account_number || ''}"
-                                data-status="${promoter.status || 'inactive'}"
-                                data-position-id="${promoter.position_id || ''}"
-                                ${selected}>${promoter.promoter_id}</option>`;
-                    }).join('')}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${index + 1}][promoter_search]" placeholder="Search promoter by name/ID" value="${rowData.promoter_id && rowData.promoter_name ? rowData.promoter_id + ' - ' + rowData.promoter_name : ''}" oninput="handlePromoterSearchInput(${index + 1}, this)" onfocus="showAllPromoters(${index + 1}, this)" onblur="hidePromoterSuggestions(${index + 1})">
+                    <div id="promoterSuggestions-${index + 1}" class="promoter-suggestions" style="display:none"></div>
+                    <select class="table-input-small" name="rows[${index + 1}][promoter_id]" onchange="updatePromoterDetails(${index + 1}, this)" style="display:none">
+                        <option value="">Select</option>
+                        ${rowData.promoter_id ? promoters.map(promoter => {
+                            const positionName = promoter.position ? promoter.position.position_name : 'No Position';
+                            const selected = promoter.id == rowData.promoter_id ? 'selected' : '';
+                            return `<option value="${promoter.id}"
+                                    data-name="${promoter.promoter_name}"
+                                    data-position="${positionName}"
+                                    data-phone="${promoter.phone_no || ''}"
+                                    data-id-card="${promoter.identity_card_no || ''}"
+                                    data-bank="${promoter.bank_name || ''}"
+                                    data-account="${promoter.bank_account_number || ''}"
+                                    data-status="${promoter.status || 'inactive'}"
+                                    data-position-id="${promoter.position_id || ''}"
+                                    ${selected}>${promoter.promoter_id}</option>`;
+                        }).join('') : ''}
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${index + 1}][promoter_name]" readonly data-tooltip="" value="${rowData.promoter_name || ''}">
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][position]" readonly value="${rowData.position || ''}">
             </div>

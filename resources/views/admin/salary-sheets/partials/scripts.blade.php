@@ -27,22 +27,14 @@ function addPromoterRow() {
             <input type="text" class="table-input" name="rows[${rowCounter}][location]" placeholder="Location">
         </td>
         <td>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <select class="table-input-small" name="rows[${rowCounter}][promoter_id]" onchange="updatePromoterDetails(${rowCounter}, this)">
-                    <option value="">Select</option>
-                    ${promoters.map(promoter => {
-                        const positionName = promoter.position ? promoter.position.position_name : 'No Position';
-                        return `<option value="${promoter.id}" 
-                                data-name="${promoter.promoter_name}" 
-                                data-position="${positionName}"
-                                data-phone="${promoter.phone_no || ''}"
-                                data-id-card="${promoter.identity_card_no || ''}"
-                                data-bank="${promoter.bank_name || ''}"
-                                data-account="${promoter.bank_account_number || ''}"
-                                data-status="${promoter.status || 'inactive'}"
-                                data-position-id="${promoter.position_id || ''}">${promoter.promoter_id}</option>`;
-                    }).join('')}
-                </select>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; position: relative;">
+                <div style="position: relative;">
+                    <input type="text" class="table-input-small" name="rows[${rowCounter}][promoter_search]" placeholder="Search promoter by name/ID" oninput="handlePromoterSearchInput(${rowCounter}, this)" onfocus="showAllPromoters(${rowCounter}, this)" onblur="hidePromoterSuggestions(${rowCounter})">
+                    <div id="promoterSuggestions-${rowCounter}" class="promoter-suggestions" style="display:none"></div>
+                    <select class="table-input-small" name="rows[${rowCounter}][promoter_id]" onchange="updatePromoterDetails(${rowCounter}, this)" style="display:none">
+                        <option value="">Select</option>
+                    </select>
+                </div>
                 <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${rowCounter}][promoter_name]" readonly data-tooltip="">
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${rowCounter}][position]" readonly>
             </div>
@@ -471,4 +463,213 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add first row automatically
     addPromoterRow();
 });
+
+// BEGIN: Shared promoter inline search (portal-based) from create view
+let promoterSearchDebounceTimers = {};
+let promoterSuggestionsPortalEl = null;
+let promoterSuggestionsActiveAnchor = null;
+let promoterSuggestionsActiveRowNum = null;
+
+function getPromoterPortal() {
+    if (!promoterSuggestionsPortalEl) {
+        promoterSuggestionsPortalEl = document.createElement('div');
+        promoterSuggestionsPortalEl.id = 'promoterSuggestionsPortal';
+        promoterSuggestionsPortalEl.style.position = 'absolute';
+        promoterSuggestionsPortalEl.style.zIndex = '100000';
+        promoterSuggestionsPortalEl.style.background = '#fff';
+        promoterSuggestionsPortalEl.style.border = '1px solid #ddd';
+        promoterSuggestionsPortalEl.style.maxHeight = '260px';
+        promoterSuggestionsPortalEl.style.overflowY = 'auto';
+        promoterSuggestionsPortalEl.style.boxShadow = '0 8px 14px rgba(0,0,0,0.12)';
+        promoterSuggestionsPortalEl.style.display = 'none';
+        document.body.appendChild(promoterSuggestionsPortalEl);
+    }
+    return promoterSuggestionsPortalEl;
+}
+
+function positionPromoterPortal(anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const portal = getPromoterPortal();
+    portal.style.minWidth = rect.width + 'px';
+    portal.style.left = (rect.left + scrollLeft) + 'px';
+    portal.style.top = (rect.bottom + scrollTop) + 'px';
+}
+
+function showAllPromoters(rowNum, inputEl) {
+    const q = inputEl.value.trim();
+    const row = inputEl.closest('tr');
+    const hiddenSelect = row ? row.querySelector(`select[name*='[promoter_id]']`) : null;
+    if (hiddenSelect && hiddenSelect.value) {
+        const portal = getPromoterPortal();
+        portal.style.display = 'none';
+        return;
+    }
+    if (q.length >= 2) {
+        handlePromoterSearchInput(rowNum, inputEl);
+        return;
+    }
+    searchPromoters(rowNum, '', 20, inputEl);
+}
+
+function hidePromoterSuggestions(rowNum) {
+    setTimeout(() => {
+        const portal = getPromoterPortal();
+        portal.style.display = 'none';
+        promoterSuggestionsActiveAnchor = null;
+        promoterSuggestionsActiveRowNum = null;
+    }, 150);
+}
+
+document.addEventListener('click', (e) => {
+    const isSuggestion = e.target.closest('#promoterSuggestionsPortal');
+    const isSearchInput = e.target.closest('input[name*="[promoter_search]"]');
+    if (!isSuggestion && !isSearchInput) {
+        const portal = getPromoterPortal();
+        portal.style.display = 'none';
+        promoterSuggestionsActiveAnchor = null;
+        promoterSuggestionsActiveRowNum = null;
+    }
+});
+
+function searchPromoters(rowNum, q, limit = 10, inputEl = null) {
+    if (promoterSearchDebounceTimers[rowNum]) {
+        clearTimeout(promoterSearchDebounceTimers[rowNum]);
+    }
+    promoterSearchDebounceTimers[rowNum] = setTimeout(async () => {
+        try {
+            const exclude = getSelectedPromoterIds ? getSelectedPromoterIds() : [];
+            const params = new URLSearchParams({ q, limit: limit.toString() });
+            exclude.forEach(id => params.append('exclude[]', id));
+            const url = `${window.location.origin}${window.location.pathname.includes('/admin/') ? '' : ''}/admin/promoters/ajax/search?` + params.toString();
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            const items = (data && data.data) ? data.data : [];
+            const portal = getPromoterPortal();
+            if (!items.length) {
+                portal.innerHTML = '<div style="padding: 6px 8px; color: #666;">No results</div>';
+                if (inputEl) { positionPromoterPortal(inputEl); }
+                portal.style.display = 'block';
+                promoterSuggestionsActiveAnchor = inputEl;
+                promoterSuggestionsActiveRowNum = rowNum;
+                return;
+            }
+            portal.innerHTML = items.map(p => `
+                <div class="promoter-suggestion-item" data-id="${p.id}" data-name="${p.promoter_name}" data-position="${p.position || ''}" data-position-id="${p.position_id || ''}" data-promoter-id="${p.promoter_id}" data-phone="${p.phone_no || ''}" data-id-card="${p.identity_card_no || ''}" data-bank="${p.bank_name || ''}" data-account="${p.bank_account_number || ''}" data-status="${p.status || ''}"
+                    style="padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                    <div style="font-weight: 600;">${p.promoter_name} <span style="color:#999; font-weight:400;">(${p.promoter_id})</span></div>
+                    <div style="font-size: 12px; color: #666;">${p.position || 'No Position'} · ${p.phone_no || ''}</div>
+                </div>
+            `).join('');
+            portal.querySelectorAll('.promoter-suggestion-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectPromoterSuggestion(rowNum, item);
+                });
+                item.addEventListener('click', () => selectPromoterSuggestion(rowNum, item));
+            });
+            if (inputEl) { positionPromoterPortal(inputEl); }
+            portal.style.display = 'block';
+            promoterSuggestionsActiveAnchor = inputEl;
+            promoterSuggestionsActiveRowNum = rowNum;
+        } catch (e) {
+            const portal = getPromoterPortal();
+            portal.innerHTML = '<div style="padding: 6px 8px; color: #c00;">Search failed</div>';
+            if (inputEl) { positionPromoterPortal(inputEl); }
+            portal.style.display = 'block';
+        }
+    }, q.length >= 2 ? 250 : 0);
+}
+
+function handlePromoterSearchInput(rowNum, inputEl) {
+    const q = inputEl.value.trim();
+    searchPromoters(rowNum, q, 10, inputEl);
+}
+
+function selectPromoterSuggestion(rowNum, el) {
+    const anchor = promoterSuggestionsActiveAnchor;
+    const row = anchor ? anchor.closest('tr') : null;
+    if (!row) return;
+    const hiddenSelect = row.querySelector(`select[name*='[promoter_id]']`);
+    const nameInput = row.querySelector(`input[name*='[promoter_name]']`);
+    const positionInput = row.querySelector(`input[name*='[position]']`);
+    const searchInput = row.querySelector(`input[name*='[promoter_search]']`);
+
+    // Duplicate detection
+    const targetPromoterDbId = el.dataset.id;
+    if (targetPromoterDbId) {
+        const allSelects = document.querySelectorAll("select[name*='[promoter_id]']");
+        for (const sel of allSelects) {
+            if (sel === hiddenSelect) continue;
+            if (sel.value && sel.value === targetPromoterDbId) {
+                const existingRow = sel.closest('tr');
+                if (existingRow) {
+                    existingRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const originalBg = existingRow.style.backgroundColor;
+                    existingRow.style.transition = 'background-color 0.6s ease';
+                    existingRow.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => { existingRow.style.backgroundColor = originalBg || ''; }, 1200);
+                }
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Duplicate Promoter', text: 'This promoter is already added. Highlighted the existing row.' });
+                }
+                const portal = getPromoterPortal();
+                portal.style.display = 'none';
+                promoterSuggestionsActiveAnchor = null;
+                promoterSuggestionsActiveRowNum = null;
+                return;
+            }
+        }
+    }
+
+    const option = document.createElement('option');
+    option.value = el.dataset.id;
+    option.selected = true;
+    option.dataset.name = el.dataset.name || '';
+    option.dataset.position = el.dataset.position || '';
+    option.dataset.phone = el.dataset.phone || '';
+    option.dataset.idCard = el.dataset.idCard || '';
+    option.dataset.bank = el.dataset.bank || '';
+    option.dataset.account = el.dataset.account || '';
+    option.dataset.status = el.dataset.status || '';
+    option.dataset.positionId = el.dataset.positionId || '';
+    option.textContent = el.dataset.promoterId || '';
+
+    hiddenSelect.innerHTML = '';
+    hiddenSelect.appendChild(option);
+
+    updatePromoterDetails(rowNum, hiddenSelect);
+
+    if (nameInput) nameInput.value = el.dataset.name || '';
+    if (positionInput) positionInput.value = el.dataset.position || '';
+    if (searchInput) searchInput.value = `${el.dataset.promoterId} - ${el.dataset.name}`;
+
+    const portal = getPromoterPortal();
+    portal.style.display = 'none';
+    promoterSuggestionsActiveAnchor = null;
+    promoterSuggestionsActiveRowNum = null;
+
+    // Recalculate dependent amounts
+    if (typeof calculateAttendanceTotal === 'function') {
+        calculateAttendanceTotal(rowNum);
+    }
+    if (typeof calculateGrandTotal === 'function') {
+        calculateGrandTotal();
+    }
+}
+
+// Reposition portal on scroll/resize if visible
+window.addEventListener('scroll', () => {
+    if (promoterSuggestionsPortalEl && promoterSuggestionsPortalEl.style.display === 'block' && promoterSuggestionsActiveAnchor) {
+        positionPromoterPortal(promoterSuggestionsActiveAnchor);
+    }
+}, true);
+
+window.addEventListener('resize', () => {
+    if (promoterSuggestionsPortalEl && promoterSuggestionsPortalEl.style.display === 'block' && promoterSuggestionsActiveAnchor) {
+        positionPromoterPortal(promoterSuggestionsActiveAnchor);
+    }
+});
+// END: Shared promoter inline search
 </script>
