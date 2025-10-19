@@ -70,7 +70,7 @@ class SalarySheetController extends Controller
             $sheetNumber = SalarySheet::generateSheetNumber();
 
             $salarySheet = SalarySheet::create([
-                'sheet_no' => $salarySheet->sheet_no,
+                'sheet_no' => $sheetNumber,
                 'job_id' => $request->job_id,
                 'status' => $request->status,
                 'location' => $request->location,

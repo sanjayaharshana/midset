@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('xelenic_id')->nullable()->unique()->after('email');
+        Schema::table('employers_salary_sheet_item', function (Blueprint $table) {
+            $table->json('allowances_data')->nullable()->after('coordinator_details');
         });
     }
 
@@ -21,9 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropUnique(['xelenic_id']);
-            $table->dropColumn('xelenic_id');
+        Schema::table('employers_salary_sheet_item', function (Blueprint $table) {
+            $table->dropColumn('allowances_data');
         });
     }
 };
