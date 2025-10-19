@@ -12,43 +12,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Use raw SQL to handle this more safely
-        // Check if job_id column exists first
-        $columns = DB::select("SHOW COLUMNS FROM position_wise_salary_rules LIKE 'job_id'");
-        if (empty($columns)) {
-            DB::statement('ALTER TABLE position_wise_salary_rules ADD COLUMN job_id BIGINT UNSIGNED NULL AFTER position_id');
-        }
-        
-        // Drop foreign key constraint if it exists
-        try {
-            DB::statement('ALTER TABLE position_wise_salary_rules DROP FOREIGN KEY position_wise_salary_rules_position_id_foreign');
-        } catch (\Exception $e) {
-            // Try alternative constraint name
-            try {
-                DB::statement('ALTER TABLE position_wise_salary_rules DROP FOREIGN KEY position_wise_salary_rules_position_id_foreign');
-            } catch (\Exception $e2) {
-                // Constraint doesn't exist, continue
+        Schema::table('position_wise_salary_rules', function (Blueprint $table) {
+            // Add job_id column if it doesn't exist
+            if (!Schema::hasColumn('position_wise_salary_rules', 'job_id')) {
+                $table->unsignedBigInteger('job_id')->nullable()->after('position_id');
             }
-        }
-        
-        // Drop unique constraint if it exists
-        try {
-            DB::statement('ALTER TABLE position_wise_salary_rules DROP INDEX position_wise_salary_rules_position_id_unique');
-        } catch (\Exception $e) {
-            // Try alternative constraint name
-            try {
-                DB::statement('ALTER TABLE position_wise_salary_rules DROP INDEX position_id');
-            } catch (\Exception $e2) {
-                // Constraint doesn't exist, continue
-            }
-        }
-        
-        // Add composite unique constraint
-        DB::statement('ALTER TABLE position_wise_salary_rules ADD UNIQUE position_job_unique (position_id, job_id)');
-        
-        // Add foreign key constraints
-        DB::statement('ALTER TABLE position_wise_salary_rules ADD CONSTRAINT position_wise_salary_rules_position_id_foreign FOREIGN KEY (position_id) REFERENCES promoter_positions(id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE position_wise_salary_rules ADD CONSTRAINT position_wise_salary_rules_job_id_foreign FOREIGN KEY (job_id) REFERENCES custom_jobs(id) ON DELETE CASCADE');
+            
+            // Drop existing foreign key constraints and unique constraints
+            $table->dropForeign(['position_id']);
+            $table->dropUnique(['position_id']);
+            
+            // Add composite unique constraint
+            $table->unique(['position_id', 'job_id'], 'position_job_unique');
+            
+            // Add foreign key constraints
+            $table->foreign('position_id')->references('id')->on('promoter_positions')->onDelete('cascade');
+            $table->foreign('job_id')->references('id')->on('custom_jobs')->onDelete('cascade');
+        });
     }
 
     /**

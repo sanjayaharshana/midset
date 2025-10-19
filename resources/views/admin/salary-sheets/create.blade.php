@@ -2168,7 +2168,7 @@ function addPromoterRow() {
     setTimeout(() => {
         console.log(`Triggering calculations for new row ${nextRowNumber}`);
         calculateRowTotal(nextRowNumber);
-        calculateAttendanceAmount(nextRowNumber);
+        // Don't call calculateAttendanceAmount here - it will be called when promoter is selected
         calculateRowNet(nextRowNumber);
         calculateGrandTotal();
     }, 100);
@@ -2672,8 +2672,7 @@ function selectPromoterSuggestion(rowNum, el) {
 
     // Recalculate dependent amounts
     calculateRowTotal(rowNum);
-    calculateAttendanceAmount(rowNum);
-    calculateRowNet(rowNum);
+    // calculateAttendanceAmount is now called within calculateRowTotal
     calculateGrandTotal();
 
     // Update other dropdowns for duplicate prevention
@@ -2709,7 +2708,7 @@ function validatePromoterSelection(selectElement) {
     return true;
 }
 
-function updatePromoterDetails(rowNum, selectElement) {
+async function updatePromoterDetails(rowNum, selectElement) {
     // Validate promoter selection first
     if (!validatePromoterSelection(selectElement)) {
         return; // Stop processing if validation fails
@@ -2731,7 +2730,7 @@ function updatePromoterDetails(rowNum, selectElement) {
         // Recalculate attendance amount when promoter changes
         const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
         const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
-        calculateAttendanceAmount(rowNum, presentDays);
+        await calculateAttendanceAmount(rowNum, presentDays);
         
         // Apply job settings to this row when promoter changes
         applyJobSettingsToRow(rowNum);
@@ -3196,12 +3195,11 @@ function calculateRowTotal(rowNum) {
     }
 
     // Calculate attendance amount based on position salary
-    calculateAttendanceAmount(rowNum, total);
-
-    // Apply job settings to this row when attendance changes
-    applyJobSettingsToRow(rowNum);
-
-    calculateRowNet(rowNum);
+    calculateAttendanceAmount(rowNum, total).then(() => {
+        // Apply job settings to this row when attendance changes
+        applyJobSettingsToRow(rowNum);
+        calculateRowNet(rowNum);
+    });
 }
 
 // Function to calculate attendance amount based on position salary and present days
@@ -3238,7 +3236,7 @@ function calculateCoordinatorFee(rowNum) {
     }
 }
 
-function calculateAttendanceAmount(rowNum, presentDays) {
+async function calculateAttendanceAmount(rowNum, presentDays) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
     if (!row) return;
 
@@ -3293,6 +3291,13 @@ function calculateAttendanceAmount(rowNum, presentDays) {
         
         calculateRowNet(rowNum);
         return;
+    }
+
+    // Ensure salary rules are loaded before calculating
+    const selectedJobId = document.getElementById('job_id').value;
+    if (selectedJobId && Object.keys(positionSalaryRules).length === 0) {
+        console.log('Salary rules not loaded yet, loading now...');
+        await loadPositionSalaryRules();
     }
 
     // Get position salary from loaded rules
@@ -3907,13 +3912,7 @@ function addPromoterRowFromJson(rowData, index) {
 
         // Trigger all calculations after data is loaded
         calculateRowTotal(index + 1);
-
-        // Get present days for attendance amount calculation
-        const totalInput = row.querySelector(`input[name="rows[${index + 1}][attendance_total]"]`);
-        const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
-        calculateAttendanceAmount(index + 1, presentDays);
-
-        calculateRowNet(index + 1);
+        // calculateAttendanceAmount is now called within calculateRowTotal
 
         // Ensure amount field is set from attendance amount
         const attendanceAmountInput = row.querySelector(`input[name="rows[${index + 1}][attendance_amount]"]`);
@@ -3991,14 +3990,7 @@ function pullExistingData(isAutoPull = false) {
 
                     // Trigger attendance calculations
                     calculateRowTotal(rowNum);
-
-                    // Get present days for attendance amount calculation
-                    const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
-                    const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
-                    calculateAttendanceAmount(rowNum, presentDays);
-
-                    // Trigger net amount calculations
-                    calculateRowNet(rowNum);
+                    // calculateAttendanceAmount is now called within calculateRowTotal
 
                     // Ensure amount field is set from attendance amount
                     const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
