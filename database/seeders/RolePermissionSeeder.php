@@ -229,6 +229,7 @@ class RolePermissionSeeder extends Seeder
             'view promoters',
             'view coordinators',
             'view salary sheets',
+            'create salary sheets',
             'print salary sheets',
         ]);
 

@@ -56,7 +56,14 @@ class SalarySheetController extends Controller
     {
         $promoters = Promoter::with('position')->get();
         $coordinators = Coordinator::all();
-        $jobs = Job::with('client')->get();
+
+        // If officer, only allow selecting jobs assigned to that officer
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $jobs = Job::with('client')->where('officer_id', $user->id)->where('status', '!=', 'completed')->get();
+        } else {
+            $jobs = Job::with('client')->where('status', '!=', 'completed')->get();
+        }
         $allowances = Allowance::all();
 
         return view('admin.salary-sheets.create', compact('promoters', 'coordinators', 'jobs', 'allowances'));
@@ -72,6 +79,21 @@ class SalarySheetController extends Controller
 
         try {
             $job = Job::findOrFail($request->job_id);
+
+            // Prevent creating salary sheets for completed jobs
+            if ($job->status === 'completed') {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Cannot create salary sheets for completed jobs.'])
+                    ->withInput();
+            }
+
+            // Access control: officers can only create salary sheets for their assigned jobs
+            $user = auth()->user();
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+                if ((int) $job->officer_id !== (int) $user->id) {
+                    abort(403);
+                }
+            }
 
             Log::info('Processing rows:', $request->rows ?? []);
 
@@ -245,7 +267,13 @@ class SalarySheetController extends Controller
 
         $promoters = Promoter::with('position')->get();
         $coordinators = Coordinator::all();
-        $jobs = Job::with('client')->get();
+
+        // If officer, only allow selecting jobs assigned to that officer
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $jobs = Job::with('client')->where('officer_id', $user->id)->where('status', '!=', 'completed')->get();
+        } else {
+            $jobs = Job::with('client')->where('status', '!=', 'completed')->get();
+        }
 
         $salarySheet->load(['job', 'items.position']);
 
@@ -280,6 +308,22 @@ class SalarySheetController extends Controller
         }
 
         try {
+            // If officer, ensure the selected job belongs to the officer
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+                $job = Job::findOrFail($request->job_id);
+                if ((int) $job->officer_id !== (int) $user->id) {
+                    abort(403);
+                }
+            }
+
+            // Prevent updating salary sheets for completed jobs
+            $job = Job::findOrFail($request->job_id);
+            if ($job->status === 'completed') {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Cannot update salary sheets for completed jobs.'])
+                    ->withInput();
+            }
+
             $salarySheet->update([
                 'job_id' => $request->job_id,
                 'status' => $request->status,
@@ -360,6 +404,21 @@ class SalarySheetController extends Controller
 
         try {
             $job = Job::findOrFail($request->job_id);
+
+            // Prevent enforcing salary sheets for completed jobs
+            if ($job->status === 'completed') {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Cannot enforce salary sheets for completed jobs.'])
+                    ->withInput();
+            }
+
+            // Access control: officers can only create/update salary sheets for their assigned jobs
+            $user = auth()->user();
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+                if ((int) $job->officer_id !== (int) $user->id) {
+                    abort(403);
+                }
+            }
 
             Log::info('Processing rows:', $request->rows ?? []);
 
