@@ -24,10 +24,19 @@ class SalarySheetController extends Controller
      */
     public function index()
     {
-        $salarySheets = SalarySheet::with(['job.client', 'items.position'])
+        $query = SalarySheet::with(['job.client', 'items.position'])
             ->withCount(['items'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->orderBy('created_at', 'desc');
+
+        // If logged-in user is an officer, only show salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $query->whereHas('job', function ($q) use ($user) {
+                $q->where('officer_id', $user->id);
+            });
+        }
+
+        $salarySheets = $query->paginate(20);
 
         // Add promoters count for each salary sheet
         $salarySheets->getCollection()->transform(function ($sheet) {
@@ -206,6 +215,15 @@ class SalarySheetController extends Controller
      */
     public function show(SalarySheet $salarySheet)
     {
+        // Access control: officers can only view salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $salarySheet->loadMissing('job');
+            if (!$salarySheet->job || (int) $salarySheet->job->officer_id !== (int) $user->id) {
+                abort(403);
+            }
+        }
+
         $salarySheet->load(['job.client', 'items.position']);
 
         return view('admin.salary-sheets.show', compact('salarySheet'));
@@ -216,6 +234,15 @@ class SalarySheetController extends Controller
      */
     public function edit(SalarySheet $salarySheet)
     {
+        // Access control: officers can only edit salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $salarySheet->loadMissing('job');
+            if (!$salarySheet->job || (int) $salarySheet->job->officer_id !== (int) $user->id) {
+                abort(403);
+            }
+        }
+
         $promoters = Promoter::with('position')->get();
         $coordinators = Coordinator::all();
         $jobs = Job::with('client')->get();
@@ -230,6 +257,15 @@ class SalarySheetController extends Controller
      */
     public function update(Request $request, SalarySheet $salarySheet)
     {
+        // Access control: officers can only update salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $salarySheet->loadMissing('job');
+            if (!$salarySheet->job || (int) $salarySheet->job->officer_id !== (int) $user->id) {
+                abort(403);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'job_id' => 'required|exists:custom_jobs,id',
             'status' => 'required|in:draft,approved,paid',
@@ -265,6 +301,15 @@ class SalarySheetController extends Controller
      */
     public function destroy(SalarySheet $salarySheet)
     {
+        // Access control: officers can only delete salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $salarySheet->loadMissing('job');
+            if (!$salarySheet->job || (int) $salarySheet->job->officer_id !== (int) $user->id) {
+                abort(403);
+            }
+        }
+
         try {
         $salarySheet->delete();
 
@@ -282,6 +327,15 @@ class SalarySheetController extends Controller
     public function getByJob($jobId)
     {
         try {
+            // Access control: officers can only fetch salary sheets for their assigned jobs
+            $user = auth()->user();
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+                $job = Job::findOrFail($jobId);
+                if ((int) $job->officer_id !== (int) $user->id) {
+                    abort(403);
+                }
+            }
+
             $salarySheets = SalarySheet::with(['job', 'items.position'])
                 ->where('job_id', $jobId)
                 ->orderBy('created_at', 'desc')
@@ -496,6 +550,15 @@ class SalarySheetController extends Controller
      */
     public function print(SalarySheet $salarySheet)
     {
+        // Access control: officers can only print salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $salarySheet->loadMissing('job');
+            if (!$salarySheet->job || (int) $salarySheet->job->officer_id !== (int) $user->id) {
+                abort(403);
+            }
+        }
+
         $salarySheet->load(['job.client', 'job.officer', 'job.reporter', 'items.position']);
 
         return view('admin.salary-sheets.print', compact('salarySheet'));
