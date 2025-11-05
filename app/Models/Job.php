@@ -67,6 +67,14 @@ class Job extends Model
     }
 
     /**
+     * Get all salary sheets for this job.
+     */
+    public function salarySheets()
+    {
+        return $this->hasMany(SalarySheet::class);
+    }
+
+    /**
      * Scope for pending jobs
      */
     public function scopePending($query)

@@ -1795,7 +1795,7 @@ function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {
     
     let rowHTML = `
         <div style="display: grid; grid-template-columns: repeat(${totalColumns}, 1fr); gap: 0.75rem; width: ${columnWidth}px;">
-            <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowNumber}][amount]" readonly title="Auto-calculated from Attendance Amount" value="${defaultValues.amount || 0}">
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][amount]" title="Amount (Synced with Attendance Amount, but editable)" value="${defaultValues.amount || 0}" oninput="calculateRowNet(${rowNumber})">
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][expenses]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.expenses || 0}">
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.hold_for_8_weeks || 0}">
     `;
@@ -1812,7 +1812,7 @@ function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {
     
     // Add Net Amount field
     rowHTML += `
-            <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${rowNumber}][net_amount]" readonly title="Auto-calculated: Amount + Expenses + Allowances - Hold" value="${defaultValues.net_amount || 0}">
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][net_amount]" title="Net Amount (Auto-calculated, but editable)" value="${defaultValues.net_amount || 0}" oninput="calculateGrandTotal()">
         </div>
     `;
     
@@ -2132,7 +2132,7 @@ function addPromoterRow() {
             <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_total]" readonly>
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" oninput="updateAmountFromAttendance(${nextRowNumber}); calculateNetAmount(${nextRowNumber})">
             </div>
         </td>
         <td id="paymentCell-${nextRowNumber}">
@@ -3104,10 +3104,11 @@ function updateExistingRows(dates) {
                 const amountInput = document.createElement('input');
                 amountInput.type = 'number';
                 amountInput.step = '0.01';
-                amountInput.className = 'table-input-small calculated-cell';
+                amountInput.className = 'table-input-small';
                 amountInput.name = `rows[${getRowNumberFromElement(row)}][attendance_amount]`;
-                amountInput.readOnly = true;
-                amountInput.title = 'Auto-calculated: Position Salary × Present Days';
+                amountInput.title = 'Attendance Amount (Auto-calculated, but editable)';
+                const rowNum = getRowNumberFromElement(row);
+                amountInput.setAttribute('oninput', `updateAmountFromAttendance(${rowNum}); calculateNetAmount(${rowNum})`);
                 gridContainer.appendChild(amountInput);
             }
         }
@@ -3360,6 +3361,25 @@ function calculateRowNet(rowNum) {
     calculateGrandTotal();
 }
 
+// Helper function to sync attendance amount to payment amount field when manually edited
+function updateAmountFromAttendance(rowNum) {
+    const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][attendance_amount]"])`);
+    if (!row) return;
+    
+    const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
+    const amountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
+    
+    if (attendanceAmountInput && amountInput) {
+        // Sync attendance amount to payment amount
+        amountInput.value = attendanceAmountInput.value;
+    }
+}
+
+// Alias for calculateRowNet to match the oninput handler
+function calculateNetAmount(rowNum) {
+    calculateRowNet(rowNum);
+}
+
 function calculateGrandTotal() {
     const rows = document.querySelectorAll('#promoterRows tr');
     let totalEarnings = 0;
@@ -3575,7 +3595,7 @@ function loadSalarySheetAsRow(sheet, index) {
             <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${currentAttendanceDates.length > 0 ? (currentAttendanceDates.length * 80 + 160) + 'px' : 'auto'};">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index}][attendance_total]" value="${sheet.attendance_total || 0}" readonly>
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][attendance_amount]" readonly value="${sheet.attendance_amount || 0}" title="Auto-calculated: Position Salary × Present Days">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][attendance_amount]" value="${sheet.attendance_amount || 0}" title="Attendance Amount (Auto-calculated, but editable)" oninput="updateAmountFromAttendance(${index}); calculateNetAmount(${index})">
             </div>
         </td>
         <td id="paymentCell-${index}">
@@ -3862,7 +3882,7 @@ function addPromoterRowFromJson(rowData, index) {
             <div style="display: grid; grid-template-columns: repeat(${attendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(attendanceDates.length || 6) * 80 + 160}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_total]" readonly value="${rowData.attendance_total || 0}">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_amount]" readonly title="Auto-calculated: Position Salary × Present Days" value="${rowData.attendance_amount || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" value="${rowData.attendance_amount || 0}" oninput="updateAmountFromAttendance(${index + 1}); calculateNetAmount(${index + 1})">
             </div>
         </td>
         <td id="paymentCell-${index + 1}">

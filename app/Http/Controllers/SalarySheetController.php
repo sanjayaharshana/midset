@@ -60,9 +60,20 @@ class SalarySheetController extends Controller
         // If officer, only allow selecting jobs assigned to that officer
         $user = auth()->user();
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
-            $jobs = Job::with('client')->where('officer_id', $user->id)->where('status', '!=', 'completed')->get();
+            $jobs = Job::with('client')
+                ->where('officer_id', $user->id)
+                ->where('status', '!=', 'completed')
+                ->whereDoesntHave('salarySheets', function ($query) {
+                    $query->where('status', 'paid');
+                })
+                ->get();
         } else {
-            $jobs = Job::with('client')->where('status', '!=', 'completed')->get();
+            $jobs = Job::with('client')
+                ->where('status', '!=', 'completed')
+                ->whereDoesntHave('salarySheets', function ($query) {
+                    $query->where('status', 'paid');
+                })
+                ->get();
         }
         $allowances = Allowance::all();
 
@@ -269,10 +280,28 @@ class SalarySheetController extends Controller
         $coordinators = Coordinator::all();
 
         // If officer, only allow selecting jobs assigned to that officer
+        // Also exclude jobs with paid salary sheets, except for the current salary sheet's job
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
-            $jobs = Job::with('client')->where('officer_id', $user->id)->where('status', '!=', 'completed')->get();
+            $jobs = Job::with('client')
+                ->where('officer_id', $user->id)
+                ->where('status', '!=', 'completed')
+                ->where(function ($query) use ($salarySheet) {
+                    $query->whereDoesntHave('salarySheets', function ($q) {
+                        $q->where('status', 'paid');
+                    })
+                    ->orWhere('id', $salarySheet->job_id);
+                })
+                ->get();
         } else {
-            $jobs = Job::with('client')->where('status', '!=', 'completed')->get();
+            $jobs = Job::with('client')
+                ->where('status', '!=', 'completed')
+                ->where(function ($query) use ($salarySheet) {
+                    $query->whereDoesntHave('salarySheets', function ($q) {
+                        $q->where('status', 'paid');
+                    })
+                    ->orWhere('id', $salarySheet->job_id);
+                })
+                ->get();
         }
 
         $salarySheet->load(['job', 'items.position']);
