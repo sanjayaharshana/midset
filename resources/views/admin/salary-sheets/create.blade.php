@@ -2148,7 +2148,7 @@ function addPromoterRow() {
                     </select>
                 </div>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][current_coordinator]" readonly>
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][coordination_fee]" title="Coordination Fee (Auto-calculated, but editable)" oninput="markAsCustom(this, 'coordination_fee'); calculateRowNet(${nextRowNumber})" placeholder="0.00">
             </div>
         </td>
         <td>
@@ -3195,6 +3195,33 @@ function calculateRowTotal(rowNum) {
         totalInput.value = total.toFixed(1);
     }
 
+    // When attendance is updated, clear custom amount flags so amount gets recalculated
+    const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
+    if (row) {
+        const paymentAmountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
+        if (paymentAmountInput) {
+            // Clear custom amount flags and synced amount to allow recalculation
+            paymentAmountInput.removeAttribute('data-custom-amount');
+            paymentAmountInput.removeAttribute('data-manually-edited');
+            paymentAmountInput.removeAttribute('data-loaded-from-db');
+            paymentAmountInput.removeAttribute('data-last-synced-amount');
+            // Set flag to indicate attendance was just updated - this will force amount recalculation
+            paymentAmountInput.setAttribute('data-attendance-updated', 'true');
+        }
+        
+        // Also clear coordination fee custom flags when attendance is updated
+        const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
+        if (coordinationFeeInput) {
+            // Clear custom coordination fee flags to allow recalculation
+            coordinationFeeInput.removeAttribute('data-custom-coordination-fee');
+            coordinationFeeInput.removeAttribute('data-manually-edited');
+            coordinationFeeInput.removeAttribute('data-loaded-from-db');
+            coordinationFeeInput.removeAttribute('data-last-calculated-fee');
+            // Set flag to indicate attendance was just updated - this will force coordination fee recalculation
+            coordinationFeeInput.setAttribute('data-attendance-updated', 'true');
+        }
+    }
+
     // Calculate attendance amount based on position salary
     calculateAttendanceAmount(rowNum, total).then(() => {
         // Apply job settings to this row when attendance changes
@@ -3221,18 +3248,37 @@ function calculateCoordinatorFee(rowNum) {
     // Calculate coordinator fee: default_coordinator_fee * present_days
     const calculatedCoordinatorFee = defaultCoordinatorFee * presentDays;
     
-    // Update the coordination fee field
+    // Update the coordination fee field ONLY if it's not manually edited
     const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
     if (coordinationFeeInput) {
-        coordinationFeeInput.value = calculatedCoordinatorFee.toFixed(2);
+        const currentFee = parseFloat(coordinationFeeInput.value) || 0;
+        const previousCalculatedFee = parseFloat(coordinationFeeInput.dataset.lastCalculatedFee || 0);
+        const hasCustomFee = coordinationFeeInput.dataset.customCoordinationFee === 'true';
+        const loadedFromDb = coordinationFeeInput.dataset.loadedFromDb === 'true';
+        const manuallyEdited = coordinationFeeInput.dataset.manuallyEdited === 'true';
+        const attendanceUpdated = coordinationFeeInput.dataset.attendanceUpdated === 'true';
         
-        console.log(`Coordinator Fee Calculation for Row ${rowNum}:`, {
-            presentDays: presentDays,
-            defaultCoordinatorFee: defaultCoordinatorFee,
-            calculatedCoordinatorFee: calculatedCoordinatorFee
-        });
+        // Force update if attendance was just updated (custom fee should be cleared)
+        // OR update if:
+        // 1. Fee is empty/zero, OR
+        // 2. Fee matches the previously calculated fee (meaning it was auto-calculated, not manually edited)
+        // AND it doesn't have the custom-fee flag, wasn't loaded from DB, and wasn't manually edited
+        if (attendanceUpdated || ((currentFee === 0 || currentFee === previousCalculatedFee) && !hasCustomFee && !loadedFromDb && !manuallyEdited)) {
+            coordinationFeeInput.value = calculatedCoordinatorFee.toFixed(2);
+            coordinationFeeInput.dataset.lastCalculatedFee = calculatedCoordinatorFee.toFixed(2);
+            // Clear the attendance updated flag after updating
+            if (attendanceUpdated) {
+                coordinationFeeInput.removeAttribute('data-attendance-updated');
+            }
+            
+            console.log(`Coordinator Fee Calculation for Row ${rowNum}:`, {
+                presentDays: presentDays,
+                defaultCoordinatorFee: defaultCoordinatorFee,
+                calculatedCoordinatorFee: calculatedCoordinatorFee
+            });
+        }
         
-        // Trigger row net calculation since coordinator fee changed
+        // Trigger row net calculation since coordinator fee might have changed
         calculateRowNet(rowNum);
     }
 }
@@ -3329,14 +3375,20 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
         const hasCustomAmount = paymentAmountInput.dataset.customAmount === 'true';
         const loadedFromDb = paymentAmountInput.dataset.loadedFromDb === 'true';
         const manuallyEdited = paymentAmountInput.dataset.manuallyEdited === 'true';
+        const attendanceUpdated = paymentAmountInput.dataset.attendanceUpdated === 'true';
         
-        // Only update if:
+        // Force update if attendance was just updated (custom amount should be cleared)
+        // OR update if:
         // 1. Amount is empty/zero, OR
         // 2. Amount matches the previously synced amount (meaning it was auto-synced, not manually edited)
         // AND it doesn't have the custom-amount flag, wasn't loaded from DB, and wasn't manually edited
-        if ((currentAmount === 0 || currentAmount === previousSyncedAmount) && !hasCustomAmount && !loadedFromDb && !manuallyEdited) {
+        if (attendanceUpdated || ((currentAmount === 0 || currentAmount === previousSyncedAmount) && !hasCustomAmount && !loadedFromDb && !manuallyEdited)) {
             paymentAmountInput.value = attendanceAmount.toFixed(2);
             paymentAmountInput.dataset.lastSyncedAmount = attendanceAmount.toFixed(2);
+            // Clear the attendance updated flag after updating
+            if (attendanceUpdated) {
+                paymentAmountInput.removeAttribute('data-attendance-updated');
+            }
         }
         
         // Calculate coordinator fee based on present days
@@ -3421,6 +3473,9 @@ function markAsCustom(inputElement, fieldType) {
         inputElement.dataset.manuallyEdited = 'true';
     } else if (fieldType === 'expenses') {
         inputElement.dataset.customExpenses = 'true';
+        inputElement.dataset.manuallyEdited = 'true';
+    } else if (fieldType === 'coordination_fee') {
+        inputElement.dataset.customCoordinationFee = 'true';
         inputElement.dataset.manuallyEdited = 'true';
     }
 }
@@ -3662,7 +3717,7 @@ function loadSalarySheetAsRow(sheet, index) {
                     </select>
                 </div>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][coordinator_name]" readonly value="${coordinatorName}">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days" value="${sheet.coordination_fee || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][coordination_fee]" title="Coordination Fee (Auto-calculated, but editable)" oninput="markAsCustom(this, 'coordination_fee'); calculateRowNet(${index})" value="${sheet.coordination_fee || 0}" ${sheet.coordination_fee ? 'data-custom-coordination-fee="true" data-loaded-from-db="true"' : ''}>
             </div>
         </td>
         <td>
@@ -3953,7 +4008,7 @@ function addPromoterRowFromJson(rowData, index) {
                     </select>
                 </div>
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][current_coordinator]" readonly value="${rowData.current_coordinator || ''}">
-                <input type="number" step="0.01" class="table-input-small calculated-cell" name="rows[${index + 1}][coordination_fee]" readonly title="Auto-calculated: Default Coordinator Fee × Present Days" value="${rowData.coordination_fee || 0}">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][coordination_fee]" title="Coordination Fee (Auto-calculated, but editable)" oninput="markAsCustom(this, 'coordination_fee'); calculateRowNet(${index + 1})" value="${rowData.coordination_fee || 0}" ${rowData.coordination_fee ? 'data-custom-coordination-fee="true" data-loaded-from-db="true"' : ''}>
             </div>
         </td>
         <td>
