@@ -1795,8 +1795,8 @@ function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {
     
     let rowHTML = `
         <div style="display: grid; grid-template-columns: repeat(${totalColumns}, 1fr); gap: 0.75rem; width: ${columnWidth}px;">
-            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][amount]" title="Amount (Synced with Attendance Amount, but editable)" value="${defaultValues.amount || 0}" oninput="calculateRowNet(${rowNumber})">
-            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][expenses]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.expenses || 0}">
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][amount]" title="Amount (Editable - can be different from Attendance Amount)" value="${defaultValues.amount || 0}" oninput="markAsCustom(this, 'amount'); calculateRowNet(${rowNumber})" ${defaultValues.amount ? 'data-custom-amount="true" data-loaded-from-db="true"' : ''}>
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][expenses]" title="Expenses (Editable)" onchange="markAsCustom(this, 'expenses'); calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.expenses || 0}" ${defaultValues.expenses ? 'data-custom-expenses="true" data-loaded-from-db="true"' : ''}>
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.hold_for_8_weeks || 0}">
     `;
     
@@ -2132,7 +2132,7 @@ function addPromoterRow() {
             <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_total]" readonly>
-                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" oninput="updateAmountFromAttendance(${nextRowNumber}); calculateNetAmount(${nextRowNumber})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" oninput="calculateNetAmount(${nextRowNumber})">
             </div>
         </td>
         <td id="paymentCell-${nextRowNumber}">
@@ -3108,7 +3108,7 @@ function updateExistingRows(dates) {
                 amountInput.name = `rows[${getRowNumberFromElement(row)}][attendance_amount]`;
                 amountInput.title = 'Attendance Amount (Auto-calculated, but editable)';
                 const rowNum = getRowNumberFromElement(row);
-                amountInput.setAttribute('oninput', `updateAmountFromAttendance(${rowNum}); calculateNetAmount(${rowNum})`);
+                amountInput.setAttribute('oninput', `calculateNetAmount(${rowNum})`);
                 gridContainer.appendChild(amountInput);
             }
         }
@@ -3307,21 +3307,42 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
     // Calculate attendance amount: position salary × present days
     const attendanceAmount = positionSalary * presentDays;
 
-    // Update the attendance amount field
+    // Update the attendance amount field (always update this as it's calculated)
     const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
     if (attendanceAmountInput) {
-        attendanceAmountInput.value = attendanceAmount.toFixed(2);
+        // Only update if it's empty or matches previous calculated value (preserve custom edits)
+        const currentAttendanceAmount = parseFloat(attendanceAmountInput.value) || 0;
+        const previousCalculatedAmount = parseFloat(attendanceAmountInput.dataset.lastCalculatedAmount || 0);
+        
+        // Only update if empty or matches previous calculation (not manually edited)
+        if (currentAttendanceAmount === 0 || currentAttendanceAmount === previousCalculatedAmount) {
+            attendanceAmountInput.value = attendanceAmount.toFixed(2);
+            attendanceAmountInput.dataset.lastCalculatedAmount = attendanceAmount.toFixed(2);
+        }
     }
 
-    // Also update the payment amount field
+    // Update the payment amount field ONLY if it's empty or was auto-synced (preserve custom edits)
     const paymentAmountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
     if (paymentAmountInput) {
-        paymentAmountInput.value = attendanceAmount.toFixed(2);
+        const currentAmount = parseFloat(paymentAmountInput.value) || 0;
+        const previousSyncedAmount = parseFloat(paymentAmountInput.dataset.lastSyncedAmount || 0);
+        const hasCustomAmount = paymentAmountInput.dataset.customAmount === 'true';
+        const loadedFromDb = paymentAmountInput.dataset.loadedFromDb === 'true';
+        const manuallyEdited = paymentAmountInput.dataset.manuallyEdited === 'true';
+        
+        // Only update if:
+        // 1. Amount is empty/zero, OR
+        // 2. Amount matches the previously synced amount (meaning it was auto-synced, not manually edited)
+        // AND it doesn't have the custom-amount flag, wasn't loaded from DB, and wasn't manually edited
+        if ((currentAmount === 0 || currentAmount === previousSyncedAmount) && !hasCustomAmount && !loadedFromDb && !manuallyEdited) {
+            paymentAmountInput.value = attendanceAmount.toFixed(2);
+            paymentAmountInput.dataset.lastSyncedAmount = attendanceAmount.toFixed(2);
+        }
         
         // Calculate coordinator fee based on present days
         calculateCoordinatorFee(rowNum);
         
-        // Trigger net calculation since amount changed
+        // Trigger net calculation since amount might have changed
         calculateRowNet(rowNum);
     }
 }
@@ -3362,6 +3383,7 @@ function calculateRowNet(rowNum) {
 }
 
 // Helper function to sync attendance amount to payment amount field when manually edited
+// Only syncs if amount field is empty or matches the previous attendance amount (to avoid overwriting custom values)
 function updateAmountFromAttendance(rowNum) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][attendance_amount]"])`);
     if (!row) return;
@@ -3370,14 +3392,37 @@ function updateAmountFromAttendance(rowNum) {
     const amountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
     
     if (attendanceAmountInput && amountInput) {
-        // Sync attendance amount to payment amount
-        amountInput.value = attendanceAmountInput.value;
+        // Only sync if amount field is empty or was previously synced (to preserve custom edits)
+        // Check if amount is empty or matches the previous attendance amount
+        const currentAmount = parseFloat(amountInput.value) || 0;
+        const previousAttendanceAmount = parseFloat(amountInput.dataset.lastSyncedAmount || 0);
+        const newAttendanceAmount = parseFloat(attendanceAmountInput.value) || 0;
+        
+        // Only sync if:
+        // 1. Amount is empty/zero, OR
+        // 2. Amount matches the previously synced attendance amount (meaning it was auto-synced, not manually edited)
+        if (currentAmount === 0 || currentAmount === previousAttendanceAmount) {
+            amountInput.value = newAttendanceAmount;
+            amountInput.dataset.lastSyncedAmount = newAttendanceAmount;
+        }
+        // Otherwise, preserve the custom amount value
     }
 }
 
 // Alias for calculateRowNet to match the oninput handler
 function calculateNetAmount(rowNum) {
     calculateRowNet(rowNum);
+}
+
+// Mark field as custom when user manually edits it
+function markAsCustom(inputElement, fieldType) {
+    if (fieldType === 'amount') {
+        inputElement.dataset.customAmount = 'true';
+        inputElement.dataset.manuallyEdited = 'true';
+    } else if (fieldType === 'expenses') {
+        inputElement.dataset.customExpenses = 'true';
+        inputElement.dataset.manuallyEdited = 'true';
+    }
 }
 
 function calculateGrandTotal() {
@@ -3595,7 +3640,7 @@ function loadSalarySheetAsRow(sheet, index) {
             <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${currentAttendanceDates.length > 0 ? (currentAttendanceDates.length * 80 + 160) + 'px' : 'auto'};">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index}][attendance_total]" value="${sheet.attendance_total || 0}" readonly>
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][attendance_amount]" value="${sheet.attendance_amount || 0}" title="Attendance Amount (Auto-calculated, but editable)" oninput="updateAmountFromAttendance(${index}); calculateNetAmount(${index})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index}][attendance_amount]" value="${sheet.attendance_amount || 0}" title="Attendance Amount (Auto-calculated, but editable)" oninput="calculateNetAmount(${index})">
             </div>
         </td>
         <td id="paymentCell-${index}">
@@ -3882,7 +3927,7 @@ function addPromoterRowFromJson(rowData, index) {
             <div style="display: grid; grid-template-columns: repeat(${attendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(attendanceDates.length || 6) * 80 + 160}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_total]" readonly value="${rowData.attendance_total || 0}">
-                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" value="${rowData.attendance_amount || 0}" oninput="updateAmountFromAttendance(${index + 1}); calculateNetAmount(${index + 1})">
+                <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" value="${rowData.attendance_amount || 0}" oninput="calculateNetAmount(${index + 1})">
             </div>
         </td>
         <td id="paymentCell-${index + 1}">
@@ -3930,16 +3975,39 @@ function addPromoterRowFromJson(rowData, index) {
             updateCoordinatorDisplay(index + 1, coordinatorSelect);
         }
 
-        // Trigger all calculations after data is loaded
-        calculateRowTotal(index + 1);
-        // calculateAttendanceAmount is now called within calculateRowTotal
-
-        // Ensure amount field is set from attendance amount
-        const attendanceAmountInput = row.querySelector(`input[name="rows[${index + 1}][attendance_amount]"]`);
-        const amountInput = row.querySelector(`input[name="rows[${index + 1}][amount]"]`);
-        if (attendanceAmountInput && amountInput) {
-            amountInput.value = attendanceAmountInput.value;
+        // When loading existing data, DON'T recalculate attendance amounts - preserve the saved custom amounts
+        // Only calculate attendance total (count of present days)
+        let total = 0;
+        const attendanceInputs = row.querySelectorAll('input[name*="[attendance]["]');
+        attendanceInputs.forEach(input => {
+            const name = input.name;
+            // Only count actual attendance inputs, not the total/amount inputs
+            if (name.includes('[attendance][') && !name.includes('[attendance_total]') && !name.includes('[attendance_amount]')) {
+                total += parseFloat(input.value) || 0;
+            }
+        });
+        const totalInput = row.querySelector(`input[name="rows[${index + 1}][attendance_total]"]`);
+        if (totalInput) {
+            totalInput.value = total.toFixed(1);
         }
+        
+        // Mark amount and expenses as custom when loading from database (to prevent overwriting)
+        const amountInput = row.querySelector(`input[name="rows[${index + 1}][amount]"]`);
+        const expensesInput = row.querySelector(`input[name="rows[${index + 1}][expenses]"]`);
+        if (amountInput && parseFloat(amountInput.value) > 0) {
+            amountInput.dataset.customAmount = 'true';
+            amountInput.dataset.loadedFromDb = 'true';
+        }
+        if (expensesInput && parseFloat(expensesInput.value) > 0) {
+            expensesInput.dataset.customExpenses = 'true';
+            expensesInput.dataset.loadedFromDb = 'true';
+        }
+        
+        // DON'T recalculate amounts when loading - the amounts are already loaded from saved data
+        // The attendance_amount and amount fields already have the correct values from rowData
+        
+        // Just trigger net amount calculation to update the display
+        calculateRowNet(index + 1);
     }, 100);
 
     // Update promoter dropdowns to hide already selected promoters
@@ -4000,30 +4068,36 @@ function pullExistingData(isAutoPull = false) {
 
             // Trigger all calculations after data is loaded
             setTimeout(() => {
-                console.log('Triggering all calculations after pull data...');
+                console.log('Recalculating totals after pull data (preserving custom amounts)...');
 
-                // Calculate attendance totals and amounts for each row
+                // When pulling existing data, DON'T recalculate attendance amounts
+                // The custom amounts are already loaded from the saved data
+                // Just calculate attendance totals (count) and net amounts
                 const rows = document.querySelectorAll('#promoterRows tr');
                 rows.forEach((row, index) => {
                     const rowNum = index + 1;
-                    console.log(`Calculating for row ${rowNum}`);
+                    console.log(`Updating calculations for row ${rowNum} (preserving custom amounts)`);
 
-                    // Trigger attendance calculations
-                    calculateRowTotal(rowNum);
-                    // calculateAttendanceAmount is now called within calculateRowTotal
-
-                    // Ensure amount field is set from attendance amount
-                    const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
-                    const amountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
-                    if (attendanceAmountInput && amountInput) {
-                        amountInput.value = attendanceAmountInput.value;
+                    // Only calculate attendance total (count of present days)
+                    // Don't call calculateRowTotal as it recalculates attendance_amount
+                    let total = 0;
+                    const attendanceInputs = row.querySelectorAll('input[name*="[attendance]["]');
+                    attendanceInputs.forEach(input => {
+                        total += parseFloat(input.value) || 0;
+                    });
+                    const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+                    if (totalInput) {
+                        totalInput.value = total;
                     }
+
+                    // Calculate net amount based on the loaded custom amounts
+                    calculateRowNet(rowNum);
                 });
 
                 // Update grand total
                 calculateGrandTotal();
 
-                console.log('All calculations completed after pull data');
+                console.log('Calculations completed (custom amounts preserved)');
             }, 300);
 
             showPullDataStatus(isAutoPull ? 'Previous data loaded automatically!' : 'Data pulled successfully!', 'success');
@@ -5233,13 +5307,17 @@ function confirmSaveSalarySheet() {
     // Add hidden inputs to the form
     const form = document.getElementById('salarySheetForm');
     
+    // Update the existing status dropdown value instead of creating a hidden input
+    const statusSelect = form.querySelector('select[name="status"]');
+    if (statusSelect) {
+        statusSelect.value = salarySheetStatus;
+    }
+    
     // Remove existing hidden inputs if they exist
     const existingJobStatus = form.querySelector('input[name="job_status"]');
-    const existingSalarySheetStatus = form.querySelector('input[name="salary_sheet_status"]');
-    const existingNotes = form.querySelector('input[name="save_notes"]');
+    const existingNotes = form.querySelector('input[name="notes"]');
     
     if (existingJobStatus) existingJobStatus.remove();
-    if (existingSalarySheetStatus) existingSalarySheetStatus.remove();
     if (existingNotes) existingNotes.remove();
     
     // Add new hidden inputs
@@ -5249,15 +5327,9 @@ function confirmSaveSalarySheet() {
     jobStatusInput.value = jobStatus;
     form.appendChild(jobStatusInput);
     
-    const salarySheetStatusInput = document.createElement('input');
-    salarySheetStatusInput.type = 'hidden';
-    salarySheetStatusInput.name = 'salary_sheet_status';
-    salarySheetStatusInput.value = salarySheetStatus;
-    form.appendChild(salarySheetStatusInput);
-    
     const notesInput = document.createElement('input');
     notesInput.type = 'hidden';
-    notesInput.name = 'save_notes';
+    notesInput.name = 'notes';  // Changed from 'save_notes' to 'notes' to match controller
     notesInput.value = notes;
     form.appendChild(notesInput);
     
@@ -5272,6 +5344,19 @@ function confirmSaveSalarySheet() {
         showConfirmButton: false,
         timer: 1500
     });
+    
+    // Debug: Log all form data before submission
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    const formData = new FormData(form);
+    const debugData = {};
+    for (let [key, value] of formData.entries()) {
+        if (key.includes('attendance_amount') || key.includes('net_amount') || key.includes('[amount]')) {
+            console.log(`${key}: ${value}`);
+            debugData[key] = value;
+        }
+    }
+    console.log('Custom amounts being submitted:', debugData);
+    console.log('=== END FORM SUBMISSION DEBUG ===');
     
     // Submit the form
     setTimeout(() => {
