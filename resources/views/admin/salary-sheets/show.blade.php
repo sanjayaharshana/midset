@@ -17,7 +17,7 @@
             <h3>Salary Sheet Information</h3>
             <div style="display: flex; gap: 0.5rem;">
                 @can('edit salary sheets')
-                    @if($salarySheet->job && $salarySheet->job->status !== 'completed')
+                    @if($salarySheet->job && $salarySheet->job->status !== 'completed' && !in_array($salarySheet->status, ['complete', 'approve', 'paid']))
                         <a href="{{ route('admin.salary-sheets.edit', $salarySheet) }}" class="btn btn-warning">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -26,12 +26,12 @@
                             Edit Salary Sheet
                         </a>
                     @else
-                        <span class="btn btn-warning" style="opacity: 0.5; cursor: not-allowed;" title="Cannot edit salary sheets for completed jobs">
+                        <span class="btn btn-warning" style="opacity: 0.5; cursor: not-allowed;" title="Cannot edit salary sheets with complete/paid status or for completed jobs">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
-                            Edit Salary Sheet (Job Completed)
+                            Edit Salary Sheet (Not Available)
                         </span>
                     @endif
                 @endcan
@@ -57,8 +57,18 @@
             <div>
                 <h2 style="margin: 0; font-size: 1.75rem;">{{ $salarySheet->sheet_no }}</h2>
                 <p style="margin: 0.5rem 0 0 0; font-size: 1.1rem; opacity: 0.9;">
-                    <span class="status-badge status-{{ $salarySheet->status }}" style="background: rgba(255,255,255,0.2); color: white;">
-                        {{ $salarySheet->status_display }}
+                    @php
+                        $statusDisplay = $salarySheet->status_display;
+                        $statusClass = $salarySheet->status;
+                        
+                        // For reporter role, show "Pending Approval" for "complete" status
+                        if (auth()->check() && auth()->user()->hasRole('reporter') && $salarySheet->status === 'complete') {
+                            $statusDisplay = 'Pending Approval';
+                            $statusClass = 'pending-approval';
+                        }
+                    @endphp
+                    <span class="status-badge status-{{ $statusClass }}" style="background: rgba(255,255,255,0.2); color: white;">
+                        {{ $statusDisplay }}
                     </span>
                 </p>
                 <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">

@@ -75,8 +75,18 @@
                                 </span>
                             </td>
                             <td>
-                                <span class="status-badge status-{{ $sheet->status }}">
-                                    {{ ucfirst($sheet->status) }}
+                                @php
+                                    $statusDisplay = ucfirst($sheet->status);
+                                    $statusClass = $sheet->status;
+                                    
+                                    // For reporter role, show "Pending Approval" for "complete" status
+                                    if (auth()->check() && auth()->user()->hasRole('reporter') && $sheet->status === 'complete') {
+                                        $statusDisplay = 'Pending Approval';
+                                        $statusClass = 'pending-approval';
+                                    }
+                                @endphp
+                                <span class="status-badge status-{{ $statusClass }}">
+                                    {{ $statusDisplay }}
                                 </span>
                             </td>
                             <td>{{ $sheet->created_at->format('M d, Y') }}</td>
@@ -90,6 +100,13 @@
                                             </svg>
                                         </a>
                                     @endcan
+                                    @if(auth()->check() && auth()->user()->hasRole('reporter') && $sheet->status === 'complete')
+                                        <button type="button" class="btn btn-sm btn-success" onclick="openApprovalModal({{ $sheet->id }}, '{{ $sheet->sheet_no }}')" title="Approve Salary Sheet">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </button>
+                                    @endif
                                     @can('view salary sheets')
                                         <a href="{{ route('admin.salary-sheets.print', $sheet) }}" target="_blank" class="btn btn-sm btn-primary">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -174,9 +191,30 @@
     color: #065f46;
 }
 
+.status-complete {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-reject {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-approve {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
 .status-paid {
     background-color: #dbeafe;
     color: #1e40af;
+}
+
+.status-pending-approval {
+    background-color: #fef3c7;
+    color: #92400e;
+    font-weight: 600;
 }
 
 .table-responsive {
@@ -243,5 +281,243 @@
     opacity: 0.9;
     transform: translateY(-1px);
 }
+
+.btn-success {
+    background-color: #10b981;
+    color: white;
+    border: none;
+}
+
+.btn-success:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
 </style>
+
+<!-- Approval Modal -->
+<div id="approvalModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px; width: 90%;">
+        <div class="modal-header">
+            <h3>Approve Salary Sheet</h3>
+            <span class="close" id="approvalModalClose">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 1rem;">Are you sure you want to approve this salary sheet?</p>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                <strong>Sheet Number:</strong> <span id="approvalSheetNo"></span>
+            </div>
+            <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0;">This action will change the status from "Complete" to "Approve" and cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeApprovalModal()">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="confirmApproval()">Confirm Approval</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #374151;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    background-color: #f9fafb;
+}
+
+.close {
+    color: #9ca3af;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover,
+.close:focus {
+    color: #374151;
+}
+
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563;
+    transform: translateY(-1px);
+}
+
+.modal-footer .btn-success {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.modal-footer .btn-success:hover {
+    background-color: #059669;
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+let approvalSheetId = null;
+
+function openApprovalModal(sheetId, sheetNo) {
+    approvalSheetId = sheetId;
+    document.getElementById('approvalSheetNo').textContent = sheetNo;
+    document.getElementById('approvalModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeApprovalModal() {
+    document.getElementById('approvalModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    approvalSheetId = null;
+}
+
+function confirmApproval() {
+    if (!approvalSheetId) {
+        return;
+    }
+
+    // Show loading state
+    const confirmBtn = event.target;
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Approving...';
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                     document.querySelector('input[name="_token"]')?.value;
+
+    // Send approval request
+    const approveUrl = `{{ route('admin.salary-sheets.approve', ':id') }}`.replace(':id', approvalSheetId);
+    fetch(approveUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            _token: csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Approved!',
+                    text: data.message || 'Salary sheet has been approved successfully.',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                alert('Salary sheet approved successfully!');
+                location.reload();
+            }
+        } else {
+            throw new Error(data.message || 'Failed to approve salary sheet');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Failed to approve salary sheet. Please try again.',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            alert('Error: ' + (error.message || 'Failed to approve salary sheet'));
+        }
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+    });
+}
+
+// Close modal when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('approvalModal');
+    const closeBtn = document.getElementById('approvalModalClose');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeApprovalModal);
+    }
+    
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeApprovalModal();
+            }
+        });
+    }
+    
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal && modal.style.display === 'block') {
+            closeApprovalModal();
+        }
+    });
+});
+</script>
 @endsection

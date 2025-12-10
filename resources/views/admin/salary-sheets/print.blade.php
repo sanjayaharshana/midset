@@ -463,7 +463,15 @@
                 </div>
                 <div>
                     <strong>{{ __('salary_sheets.created') }}:</strong> {{ $salarySheet->created_at->format('M d, Y') }}<br>
-                    <strong>{{ __('salary_sheets.status') }}:</strong> <span class="status">{{ strtoupper($salarySheet->status) }}</span>
+                    <strong>{{ __('salary_sheets.status') }}:</strong> 
+                    @php
+                        $statusDisplay = strtoupper($salarySheet->status);
+                        // For reporter role, show "PENDING APPROVAL" for "complete" status
+                        if (auth()->check() && auth()->user()->hasRole('reporter') && $salarySheet->status === 'complete') {
+                            $statusDisplay = 'PENDING APPROVAL';
+                        }
+                    @endphp
+                    <span class="status">{{ $statusDisplay }}</span>
                 </div>
             </div>
         </div>

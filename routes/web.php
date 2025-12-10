@@ -82,9 +82,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('admin/coordinators', CoordinatorController::class)->names('admin.coordinators');
 
     // Salary Sheet Management routes
-    Route::resource('admin/salary-sheets', SalarySheetController::class)->names('admin.salary-sheets');
+    // Custom routes must be defined before resource route to avoid conflicts
     Route::get('admin/salary-sheets/by-job/{jobId}', [SalarySheetController::class, 'getByJob'])->name('admin.salary-sheets.by-job');
     Route::get('admin/salary-sheets/{salarySheet}/print', [SalarySheetController::class, 'print'])->name('admin.salary-sheets.print');
+    Route::post('admin/salary-sheets/{salarySheet}/approve', [SalarySheetController::class, 'approve'])->name('admin.salary-sheets.approve');
+    Route::resource('admin/salary-sheets', SalarySheetController::class)->names('admin.salary-sheets');
 
     // Position Wise Salary Rules routes
     Route::get('admin/position-wise-salary-rules/get-rules', [PositionWiseSalaryRuleController::class, 'getRules'])->name('admin.position-wise-salary-rules.get-rules');

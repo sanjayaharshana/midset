@@ -127,7 +127,9 @@
                             <select class="form-control" name="status" required>
                                 <option value="">Select Status</option>
                                 <option value="draft" selected>Draft</option>
-                                <option value="approved">Approved</option>
+                                <option value="complete">Complete</option>
+                                <option value="reject">Reject</option>
+                                <option value="approve">Approve</option>
                                 <option value="paid">Paid</option>
                             </select>
                         </div>
@@ -5241,6 +5243,8 @@ document.addEventListener('click', function(e) {
                             <option value="draft">Draft</option>
                             <option value="complete">Complete</option>
                             <option value="reject">Reject</option>
+                            <option value="approve">Approve</option>
+                            <option value="paid">Paid</option>
                         </select>
                     </div>
                 </div>
@@ -5325,6 +5329,28 @@ function updateStatusDescription() {
                 • Can be changed to Draft or Complete after corrections
             `;
             statusDescription.style.borderLeftColor = '#ef4444';
+            break;
+            
+        case 'approve':
+            descriptionText.innerHTML = `
+                <strong>Approve Status:</strong><br>
+                • The salary sheet has been approved by the reporter<br>
+                • This status indicates approval for payment processing<br>
+                • Can be changed to Paid status after payments are processed<br>
+                • Use this status when the salary sheet is ready for payment
+            `;
+            statusDescription.style.borderLeftColor = '#10b981';
+            break;
+            
+        case 'paid':
+            descriptionText.innerHTML = `
+                <strong>Paid Status:</strong><br>
+                • The salary sheet has been processed and payments have been made<br>
+                • No further edits can be made to this salary sheet<br>
+                • This status indicates final payment completion<br>
+                • Use this status when all payments have been successfully processed
+            `;
+            statusDescription.style.borderLeftColor = '#10b981';
             break;
             
         default:

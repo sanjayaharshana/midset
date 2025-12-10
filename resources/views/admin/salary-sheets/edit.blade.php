@@ -79,7 +79,9 @@
                         <select class="form-control" name="status" required>
                             <option value="">Select Status</option>
                             <option value="draft" {{ $salarySheet->status == 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="approved" {{ $salarySheet->status == 'approved' ? 'selected' : '' }}>Approved</option>
+                            <option value="complete" {{ $salarySheet->status == 'complete' ? 'selected' : '' }}>Complete</option>
+                            <option value="reject" {{ $salarySheet->status == 'reject' ? 'selected' : '' }}>Reject</option>
+                            <option value="approve" {{ $salarySheet->status == 'approve' ? 'selected' : '' }}>Approve</option>
                             <option value="paid" {{ $salarySheet->status == 'paid' ? 'selected' : '' }}>Paid</option>
                         </select>
                     </div>

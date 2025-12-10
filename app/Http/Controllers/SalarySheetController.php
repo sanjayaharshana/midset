@@ -9,8 +9,11 @@ use App\Models\Promoter;
 use App\Models\Coordinator;
 use App\Models\Job;
 use App\Models\Allowance;
+use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SalarySheetCompleteNotification;
 
 class SalarySheetController extends Controller
 {
@@ -64,14 +67,14 @@ class SalarySheetController extends Controller
                 ->where('officer_id', $user->id)
                 ->where('status', '!=', 'completed')
                 ->whereDoesntHave('salarySheets', function ($query) {
-                    $query->where('status', 'paid');
+                    $query->whereIn('status', ['paid', 'complete', 'approve']);
                 })
                 ->get();
         } else {
             $jobs = Job::with('client')
                 ->where('status', '!=', 'completed')
                 ->whereDoesntHave('salarySheets', function ($query) {
-                    $query->where('status', 'paid');
+                    $query->whereIn('status', ['paid', 'complete', 'approve']);
                 })
                 ->get();
         }
@@ -120,6 +123,8 @@ class SalarySheetController extends Controller
             ]);
 
             Log::info('Created salary sheet:', $salarySheet->toArray());
+
+
 
             // Process each promoter row
             $createdItems = [];
@@ -267,6 +272,12 @@ class SalarySheetController extends Controller
      */
     public function edit(SalarySheet $salarySheet)
     {
+        // Prevent editing salary sheets with complete, approve, or paid status
+        if (in_array($salarySheet->status, ['complete', 'approve', 'paid'])) {
+            return redirect()->route('admin.salary-sheets.index')
+                ->with('error', 'Cannot edit salary sheets with complete, approve, or paid status.');
+        }
+
         // Access control: officers can only edit salary sheets for their assigned jobs
         $user = auth()->user();
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
@@ -280,14 +291,14 @@ class SalarySheetController extends Controller
         $coordinators = Coordinator::all();
 
         // If officer, only allow selecting jobs assigned to that officer
-        // Also exclude jobs with paid salary sheets, except for the current salary sheet's job
+        // Also exclude jobs with paid/complete salary sheets, except for the current salary sheet's job
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
             $jobs = Job::with('client')
                 ->where('officer_id', $user->id)
                 ->where('status', '!=', 'completed')
                 ->where(function ($query) use ($salarySheet) {
                     $query->whereDoesntHave('salarySheets', function ($q) {
-                        $q->where('status', 'paid');
+                        $q->whereIn('status', ['paid', 'complete', 'approve']);
                     })
                     ->orWhere('id', $salarySheet->job_id);
                 })
@@ -297,7 +308,7 @@ class SalarySheetController extends Controller
                 ->where('status', '!=', 'completed')
                 ->where(function ($query) use ($salarySheet) {
                     $query->whereDoesntHave('salarySheets', function ($q) {
-                        $q->where('status', 'paid');
+                        $q->whereIn('status', ['paid', 'complete', 'approve']);
                     })
                     ->orWhere('id', $salarySheet->job_id);
                 })
@@ -314,6 +325,12 @@ class SalarySheetController extends Controller
      */
     public function update(Request $request, SalarySheet $salarySheet)
     {
+        // Prevent updating salary sheets with complete, approve, or paid status
+        if (in_array($salarySheet->status, ['complete', 'approve', 'paid'])) {
+            return redirect()->route('admin.salary-sheets.index')
+                ->with('error', 'Cannot update salary sheets with complete, approve, or paid status.');
+        }
+
         // Access control: officers can only update salary sheets for their assigned jobs
         $user = auth()->user();
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
@@ -325,7 +342,7 @@ class SalarySheetController extends Controller
 
         $validator = Validator::make($request->all(), [
             'job_id' => 'required|exists:custom_jobs,id',
-            'status' => 'required|in:draft,approved,paid',
+            'status' => 'required|in:draft,complete,reject,paid,approve',
             'location' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -618,9 +635,19 @@ class SalarySheetController extends Controller
             Log::info('Successfully processed salary sheet with items:', $createdItems);
 
             $action = $existingSalarySheet ? 'updated' : 'created';
+
+
+
+
+            // Send email notification to reporters if status is 'complete'
+            if ($request->status === 'complete') {
+                $this->sendCompleteNotificationToReporters($salarySheet);
+            }
+
             return redirect()->route('admin.salary-sheets.index')
                 ->with('success', 'Salary sheet ' . $action . ' successfully for job ' . $job->job_number . ': ' . $salarySheet->sheet_no);
         } catch (\Exception $e) {
+            dd($e);
             Log::error('Error processing salary sheet:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -750,6 +777,141 @@ class SalarySheetController extends Controller
             return response()->json([
                 'error' => 'Failed to generate JSON data: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Approve a salary sheet (change status from complete to approve)
+     * Only accessible by reporter role
+     */
+    public function approve(Request $request, SalarySheet $salarySheet)
+    {
+        try {
+            $user = auth()->user();
+
+            // Check if user has reporter role
+            if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole('reporter')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only reporters can approve salary sheets.'
+                ], 403);
+            }
+
+            // Check if salary sheet status is 'complete'
+            if ($salarySheet->status !== 'complete') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only salary sheets with "complete" status can be approved.'
+                ], 400);
+            }
+
+            // Update status to 'approve'
+            $salarySheet->update([
+                'status' => 'approve'
+            ]);
+
+            Log::info('Salary sheet approved:', [
+                'sheet_no' => $salarySheet->sheet_no,
+                'approved_by' => $user->id,
+                'approved_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Salary sheet ' . $salarySheet->sheet_no . ' has been approved successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error approving salary sheet:', [
+                'sheet_id' => $salarySheet->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve salary sheet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send email notification to all reporters when salary sheet status is complete
+     */
+    private function sendCompleteNotificationToReporters(SalarySheet $salarySheet)
+    {
+        try {
+            $mailDriver = config('mail.default');
+
+            // Check if mail driver is set to 'log' (emails won't actually be sent)
+            if ($mailDriver === 'log') {
+                Log::warning('Mail driver is set to "log" - emails will be logged but not actually sent. Change MAIL_MAILER to "smtp" in .env to send real emails.');
+            }
+
+            Log::info('=== EMAIL NOTIFICATION DEBUG START ===');
+            Log::info('Mail driver: ' . $mailDriver);
+            Log::info('Mail from: ' . config('mail.from.address'));
+
+            // Get all users with reporter role
+            $reporters = User::role('reporter')->get();
+
+            Log::info('Reporters found: ' . $reporters->count());
+
+            if ($reporters->isEmpty()) {
+                Log::info('No reporters found to send salary sheet notification');
+                return;
+            }
+
+            // Load relationships for email
+            $salarySheet->load(['job.client']);
+
+            Log::info('Salary sheet loaded:', [
+                'sheet_no' => $salarySheet->sheet_no,
+                'job_id' => $salarySheet->job_id,
+                'has_job' => $salarySheet->job ? 'yes' : 'no',
+                'has_client' => ($salarySheet->job && $salarySheet->job->client) ? 'yes' : 'no'
+            ]);
+
+            // Send email to each reporter
+            foreach ($reporters as $reporter) {
+                try {
+                    Log::info('Attempting to send email to reporter:', [
+                        'reporter_id' => $reporter->id,
+                        'reporter_email' => $reporter->email,
+                        'reporter_name' => $reporter->name
+                    ]);
+
+                    Mail::to($reporter->email)->send(new SalarySheetCompleteNotification($salarySheet));
+
+                    if ($mailDriver === 'log') {
+                        Log::info('Email logged (not actually sent - mail driver is "log")', [
+                            'reporter_email' => $reporter->email,
+                            'sheet_no' => $salarySheet->sheet_no
+                        ]);
+                    } else {
+                        Log::info('Salary sheet notification sent to reporter', [
+                            'reporter_email' => $reporter->email,
+                            'sheet_no' => $salarySheet->sheet_no,
+                            'mail_driver' => $mailDriver
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to send salary sheet notification to reporter', [
+                        'reporter_email' => $reporter->email,
+                        'sheet_no' => $salarySheet->sheet_no,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
+
+            Log::info('=== EMAIL NOTIFICATION DEBUG END ===');
+        } catch (\Exception $e) {
+            Log::error('Error sending salary sheet notifications to reporters', [
+                'sheet_no' => $salarySheet->sheet_no,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 }
