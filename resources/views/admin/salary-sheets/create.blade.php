@@ -64,6 +64,17 @@
                             </svg>
                             <span>Allowance Rules</span>
                         </button>
+                        <button type="button" id="addCustomDateBtn" class="toolbar-btn toolbar-btn-info" onclick="openAddCustomDateModal()" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                                <line x1="12" y1="14" x2="12" y2="18"></line>
+                                <line x1="10" y1="16" x2="14" y2="16"></line>
+                            </svg>
+                            <span>Add Custom Date</span>
+                        </button>
                         <button type="button" class="toolbar-btn toolbar-btn-secondary" onclick="openJobSettingsModal()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -490,6 +501,27 @@
                     <button type="button" id="cancelJobSettingsBtn" class="btn btn-secondary">Cancel</button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Custom Date Modal -->
+<div id="addCustomDateModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>Add Custom Attendance Date</h3>
+            <span class="close" id="closeAddCustomDateModal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="customDateInput">Select Date:</label>
+                <input type="date" id="customDateInput" class="form-control" required>
+            </div>
+            <div id="customDateError" style="color: #dc3545; margin-top: 0.5rem; display: none;"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="addCustomDateBtnModal" class="btn btn-primary">Add Date</button>
+            <button type="button" id="cancelAddCustomDateBtn" class="btn btn-secondary">Cancel</button>
         </div>
     </div>
 </div>
@@ -2860,7 +2892,17 @@ function validateAttendanceInput(input) {
     }
 }
 
+// Flag to prevent infinite loops
+let isUpdatingAttendanceDates = false;
+
 function updateAttendanceDates() {
+    // Prevent infinite loops
+    if (isUpdatingAttendanceDates) {
+        console.log('updateAttendanceDates() already running, skipping...');
+        return;
+    }
+    
+    isUpdatingAttendanceDates = true;
     const jobSelect = document.getElementById('job_id');
     const selectedOption = jobSelect.options[jobSelect.selectedIndex];
     const noJobMessage = document.getElementById('noJobMessage');
@@ -2873,82 +2915,196 @@ function updateAttendanceDates() {
     if (selectedOption.value) {
         const startDate = selectedOption.getAttribute('data-start-date');
         const endDate = selectedOption.getAttribute('data-end-date');
+        const jobId = selectedOption.value;
 
         if (startDate && endDate) {
-            const dates = generateDateRange(startDate, endDate);
-            updateAttendanceHeaders(dates);
-            updateExistingRows(dates);
-            currentAttendanceDates = dates;
-
-            // Load position salary rules for the selected job
-            loadPositionSalaryRules();
-
-            // Update payment headers with job allowance rules
-            const jobAllowances = getCurrentJobAllowances();
-            updatePaymentHeaders(jobAllowances);
-
-            // Apply job settings to all existing rows when job is selected
-            const rows = document.querySelectorAll('#promoterRows tr');
-            rows.forEach((row, index) => {
-                const rowNum = index + 1;
-                applyJobSettingsToRow(rowNum);
-            });
-
-            // Enable Pull Data button when job is selected
-            const pullDataBtn = document.getElementById('pullDataBtn');
-            if (pullDataBtn) {
-                pullDataBtn.disabled = false;
-            }
-
-            // Show table and hide message
-            noJobMessage.style.display = 'none';
-            salaryTableContainer.style.display = 'block';
-            attendanceLegend.style.display = 'block';
-
-            // Enable buttons
-            addPromoterBtn.disabled = false;
-            salaryRuleBtn.disabled = false;
-            allowanceRuleBtn.disabled = false;
-
-            // Initialize horizontal scroll functionality
-            setTimeout(() => {
-                initializeHorizontalScroll();
-            }, 100);
-
-            // Automatically pull existing data for the selected job (only once per job)
-            if (selectedOption.value !== lastSelectedJobId) {
-                hasAutoPulledData = false;
-                lastSelectedJobId = selectedOption.value;
-            }
+            // Start with dates from job date range
+            const jobDates = generateDateRange(startDate, endDate);
+            const allDates = new Set(jobDates);
             
-            if (!hasAutoPulledData) {
-                setTimeout(() => {
-                    console.log('Auto-pulling data for selected job:', selectedOption.value);
-                    pullExistingData(true);
-                    hasAutoPulledData = true;
-                }, 200);
-            }
+            // Fetch existing salary sheets to get custom dates
+            fetch(`/admin/salary-sheets/by-job/${jobId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Extract custom dates from existing salary sheets
+                if (data.success && data.salarySheets && data.salarySheets.length > 0) {
+                    data.salarySheets.forEach(sheet => {
+                        if (sheet.items && Array.isArray(sheet.items)) {
+                            sheet.items.forEach(item => {
+                                if (item.attendance_data && item.attendance_data.attendance) {
+                                    Object.keys(item.attendance_data.attendance).forEach(date => {
+                                        allDates.add(date);
+                                    });
+                                }
+                            });
+                        }
+                        // Also check if sheet has direct attendance_data (for backward compatibility)
+                        if (sheet.attendance_data && typeof sheet.attendance_data === 'object') {
+                            if (sheet.attendance_data.attendance) {
+                                Object.keys(sheet.attendance_data.attendance).forEach(date => {
+                                    allDates.add(date);
+                                });
+                            } else {
+                                // Direct date keys
+                                Object.keys(sheet.attendance_data).forEach(date => {
+                                    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                        allDates.add(date);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+                
+                // Convert Set to sorted array
+                const finalDates = Array.from(allDates).sort();
+                
+                // Update attendance headers and rows with all dates (including custom ones)
+                updateAttendanceHeaders(finalDates);
+                updateExistingRows(finalDates);
+                currentAttendanceDates = finalDates;
+                
+                // Load row data from the fetched salary sheets (if available)
+                if (data.success && data.salarySheets && data.salarySheets.length > 0) {
+                    // Get the most recent salary sheet
+                    const mostRecentSheet = data.salarySheets[0];
+                    // Fetch JSON data for this sheet to load the rows
+                    fetch(`/admin/salary-sheets/${mostRecentSheet.id}/json`)
+                        .then(response => response.json())
+                        .then(jsonData => {
+                            console.log('Loading row data from salary sheet:', jsonData);
+                            // Update form fields (but skip job_id update to prevent loop)
+                            if (jsonData.sheet_number) {
+                                document.getElementById('sheet_number').value = jsonData.sheet_number;
+                            }
+                            if (jsonData.status) {
+                                const statusSelect = document.querySelector('select[name="status"]');
+                                if (statusSelect) {
+                                    statusSelect.value = jsonData.status;
+                                }
+                            }
+                            
+                            // Update table rows with the data
+                            if (jsonData.rows && typeof jsonData.rows === 'object' && Object.keys(jsonData.rows).length > 0) {
+                                clearAllRows();
+                                let rowIndex = 0;
+                                for (const [rowKey, rowData] of Object.entries(jsonData.rows)) {
+                                    if (rowData.promoter_id) {
+                                        addPromoterRowFromJson(rowData, rowIndex);
+                                        rowIndex++;
+                                    }
+                                }
+                                
+                                // Recalculate totals after loading
+                                setTimeout(() => {
+                                    const rows = document.querySelectorAll('#promoterRows tr');
+                                    rows.forEach((row, index) => {
+                                        const rowNum = index + 1;
+                                        let total = 0;
+                                        const attendanceInputs = row.querySelectorAll('input[name*="[attendance]["]');
+                                        attendanceInputs.forEach(input => {
+                                            total += parseFloat(input.value) || 0;
+                                        });
+                                        const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+                                        if (totalInput) {
+                                            totalInput.value = total;
+                                        }
+                                        calculateRowNet(rowNum);
+                                    });
+                                    calculateGrandTotal();
+                                }, 300);
+                            } else {
+                                // No rows in the data - clear and add empty row
+                                clearAllRows();
+                                addPromoterRow();
+                                calculateGrandTotal();
+                            }
+                            
+                            // Continue with other initialization
+                            initializeAfterDatesUpdate();
+                            isUpdatingAttendanceDates = false;
+                        })
+                        .catch(error => {
+                            console.error('Error loading row data:', error);
+                            // If error loading data, clear existing rows and add empty row
+                            clearAllRows();
+                            addPromoterRow();
+                            calculateGrandTotal();
+                            // Continue with initialization even if row data fails to load
+                            initializeAfterDatesUpdate();
+                            isUpdatingAttendanceDates = false;
+                        });
+                } else {
+                    // No salary sheets found - clear existing data and reset
+                    clearAllRows();
+                    addPromoterRow(); // Add one empty row
+                    
+                    // Reset form fields
+                    const sheetNumberInput = document.getElementById('sheet_number');
+                    if (sheetNumberInput) {
+                        sheetNumberInput.value = '';
+                    }
+                    const statusSelect = document.querySelector('select[name="status"]');
+                    if (statusSelect) {
+                        statusSelect.value = 'draft';
+                    }
+                    
+                    // Reset grand total
+                    calculateGrandTotal();
+                    
+                    // Continue with initialization
+                    initializeAfterDatesUpdate();
+                    isUpdatingAttendanceDates = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching custom dates:', error);
+                // Fallback to job dates only if fetch fails
+                updateAttendanceHeaders(jobDates);
+                updateExistingRows(jobDates);
+                currentAttendanceDates = jobDates;
+                initializeAfterDatesUpdate();
+                isUpdatingAttendanceDates = false;
+            });
+        } else {
+            // No date range, just initialize
+            currentAttendanceDates = [];
+            updateAttendanceHeaders([]);
+            updateExistingRows([]);
+            initializeAfterDatesUpdate();
+            isUpdatingAttendanceDates = false;
         }
     } else {
-        // Clear dates when no job selected
+        // No job selected
         currentAttendanceDates = [];
         updateAttendanceHeaders([]);
         updateExistingRows([]);
-
+        
         // Clear all rows and add one empty row
         clearAllRows();
         addPromoterRow();
-
+        
         // Hide table and show message
         noJobMessage.style.display = 'block';
         salaryTableContainer.style.display = 'none';
         attendanceLegend.style.display = 'none';
-
+        
         // Disable buttons
         addPromoterBtn.disabled = true;
         salaryRuleBtn.disabled = true;
         allowanceRuleBtn.disabled = true;
-
+        const addCustomDateBtn = document.getElementById('addCustomDateBtn');
+        if (addCustomDateBtn) {
+            addCustomDateBtn.disabled = true;
+        }
+        
         // Disable Pull Data button when no job is selected
         const pullDataBtn = document.getElementById('pullDataBtn');
         if (pullDataBtn) {
@@ -2958,6 +3114,64 @@ function updateAttendanceDates() {
         // Reset auto-pull flag when no job is selected
         hasAutoPulledData = false;
         lastSelectedJobId = null;
+        isUpdatingAttendanceDates = false;
+    }
+}
+
+// Helper function to initialize after dates are updated
+function initializeAfterDatesUpdate() {
+    const jobSelect = document.getElementById('job_id');
+    const selectedOption = jobSelect.options[jobSelect.selectedIndex];
+    const noJobMessage = document.getElementById('noJobMessage');
+    const salaryTableContainer = document.getElementById('salaryTableContainer');
+    const addPromoterBtn = document.getElementById('addPromoterBtn');
+    const salaryRuleBtn = document.getElementById('salaryRuleBtn');
+    const allowanceRuleBtn = document.getElementById('allowanceRuleBtn');
+    const attendanceLegend = document.getElementById('attendanceLegend');
+
+    if (selectedOption && selectedOption.value) {
+        // Load position salary rules for the selected job
+        loadPositionSalaryRules();
+
+        // Update payment headers with job allowance rules
+        const jobAllowances = getCurrentJobAllowances();
+        updatePaymentHeaders(jobAllowances);
+
+        // Apply job settings to all existing rows when job is selected
+        const rows = document.querySelectorAll('#promoterRows tr');
+        rows.forEach((row, index) => {
+            const rowNum = index + 1;
+            applyJobSettingsToRow(rowNum);
+        });
+
+        // Enable Pull Data button when job is selected
+        const pullDataBtn = document.getElementById('pullDataBtn');
+        if (pullDataBtn) {
+            pullDataBtn.disabled = false;
+        }
+
+        // Show table and hide message
+        if (noJobMessage) noJobMessage.style.display = 'none';
+        if (salaryTableContainer) salaryTableContainer.style.display = 'block';
+        if (attendanceLegend) attendanceLegend.style.display = 'block';
+
+        // Enable buttons
+        if (addPromoterBtn) addPromoterBtn.disabled = false;
+        if (salaryRuleBtn) salaryRuleBtn.disabled = false;
+        if (allowanceRuleBtn) allowanceRuleBtn.disabled = false;
+        const addCustomDateBtn = document.getElementById('addCustomDateBtn');
+        if (addCustomDateBtn) {
+            addCustomDateBtn.disabled = false;
+        }
+
+        // Initialize horizontal scroll functionality
+        setTimeout(() => {
+            initializeHorizontalScroll();
+        }, 100);
+
+        // Note: Auto-pull is disabled here because updateAttendanceDates() already fetches
+        // salary sheets to get custom dates. The auto-pull will happen separately if needed.
+        // This prevents double-fetching and infinite loops.
     }
 }
 
@@ -3607,12 +3821,94 @@ function loadExistingSalarySheets(jobId) {
     .then(response => response.json())
     .then(data => {
         if (data.success && data.salarySheets && data.salarySheets.length > 0) {
+            // Extract all unique dates from attendance_data in all salary sheets
+            const allDates = new Set();
+            
+            // Add dates from job date range (if available)
+            const jobSelect = document.getElementById('job_id');
+            const selectedOption = jobSelect.options[jobSelect.selectedIndex];
+            if (selectedOption) {
+                const startDate = selectedOption.getAttribute('data-start-date');
+                const endDate = selectedOption.getAttribute('data-end-date');
+                if (startDate && endDate) {
+                    const jobDates = generateDateRange(startDate, endDate);
+                    jobDates.forEach(date => allDates.add(date));
+                }
+            }
+            
+            // Extract dates from all salary sheet items' attendance_data
+            data.salarySheets.forEach(sheet => {
+                if (sheet.items && Array.isArray(sheet.items)) {
+                    sheet.items.forEach(item => {
+                        if (item.attendance_data && item.attendance_data.attendance) {
+                            Object.keys(item.attendance_data.attendance).forEach(date => {
+                                allDates.add(date);
+                            });
+                        }
+                    });
+                }
+                // Also check if sheet has direct attendance_data (for backward compatibility)
+                if (sheet.attendance_data && typeof sheet.attendance_data === 'object') {
+                    if (sheet.attendance_data.attendance) {
+                        Object.keys(sheet.attendance_data.attendance).forEach(date => {
+                            allDates.add(date);
+                        });
+                    } else {
+                        // Direct date keys
+                        Object.keys(sheet.attendance_data).forEach(date => {
+                            if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                allDates.add(date);
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // Convert Set to sorted array
+            const allDatesArray = Array.from(allDates).sort();
+            
+            // Update currentAttendanceDates with all dates (including custom ones)
+            if (allDatesArray.length > 0) {
+                currentAttendanceDates = allDatesArray;
+                updateAttendanceHeaders(currentAttendanceDates);
+            }
+            
             // Clear existing rows
             clearAllRows();
 
-            // Load each salary sheet as a row
-            data.salarySheets.forEach((sheet, index) => {
-                loadSalarySheetAsRow(sheet, index);
+            // Load each salary sheet item as a row
+            let rowIndex = 0;
+            data.salarySheets.forEach(sheet => {
+                if (sheet.items && Array.isArray(sheet.items) && sheet.items.length > 0) {
+                    // If sheet has items, load each item as a row
+                    sheet.items.forEach(item => {
+                        // Transform item data to match expected structure
+                        const rowData = {
+                            promoter_id: item.attendance_data?.promoter_id || item.promoter_id,
+                            current_coordinator_id: item.coordinator_details ? 
+                                (() => {
+                                    // Find coordinator by coordinator_id
+                                    const coord = coordinators.find(c => c.coordinator_id === item.coordinator_details.coordinator_id);
+                                    return coord ? coord.id : null;
+                                })() : null,
+                            location: item.location || sheet.location,
+                            attendance_data: item.attendance_data?.attendance || {},
+                            attendance_total: item.attendance_data?.total || 0,
+                            attendance_amount: item.attendance_data?.amount || 0,
+                            basic_salary: item.payment_data?.amount || 0,
+                            expenses: item.payment_data?.expenses || 0,
+                            hold_for_8_weeks: item.payment_data?.hold_for_weeks || 0,
+                            net_salary: item.payment_data?.net_amount || 0,
+                            coordination_fee: item.coordinator_details?.amount || 0
+                        };
+                        loadSalarySheetAsRow(rowData, rowIndex);
+                        rowIndex++;
+                    });
+                } else {
+                    // Fallback: load sheet directly as a row (for backward compatibility)
+                    loadSalarySheetAsRow(sheet, rowIndex);
+                    rowIndex++;
+                }
             });
 
             // Update grand total
@@ -3656,7 +3952,17 @@ function loadSalarySheetAsRow(sheet, index) {
     let attendanceInputs = '';
     if (currentAttendanceDates && currentAttendanceDates.length > 0) {
         currentAttendanceDates.forEach(date => {
-            const attendanceValue = sheet.attendance_data && sheet.attendance_data[date] ? sheet.attendance_data[date] : 0;
+            // Check if attendance_data is an object with 'attendance' property or direct date keys
+            let attendanceValue = 0;
+            if (sheet.attendance_data) {
+                if (sheet.attendance_data.attendance && typeof sheet.attendance_data.attendance === 'object') {
+                    // Structure: { attendance: { date: value } }
+                    attendanceValue = sheet.attendance_data.attendance[date] || 0;
+                } else if (sheet.attendance_data[date] !== undefined) {
+                    // Structure: { date: value } - direct date keys
+                    attendanceValue = sheet.attendance_data[date] || 0;
+                }
+            }
             attendanceInputs += `<input type="number" class="table-input-small" name="rows[${index}][attendance][${date}]" value="${attendanceValue}" min="0" max="1" step="0.01" onchange="calculateRowTotal(${index})">`;
         });
     } else {
@@ -3853,9 +4159,13 @@ function updateFormFields(jsonData) {
 
     if (jsonData.job_id) {
         const jobSelect = document.getElementById('job_id');
-        jobSelect.value = jsonData.job_id;
-        // Trigger job change to update attendance dates
-        updateAttendanceDates();
+        const currentJobId = jobSelect.value;
+        // Only update if job_id is different to prevent infinite loop
+        if (currentJobId !== jsonData.job_id.toString()) {
+            jobSelect.value = jsonData.job_id;
+            // Trigger job change to update attendance dates
+            updateAttendanceDates();
+        }
     }
 
     if (jsonData.status) {
@@ -3932,20 +4242,28 @@ function addPromoterRowFromJson(rowData, index) {
     const tbody = document.getElementById('promoterRows');
     const row = document.createElement('tr');
 
-    // Generate attendance inputs based on JSON dates
+    // Generate attendance inputs based on currentAttendanceDates (to match headers)
     let attendanceInputs = '';
-    const attendanceDates = Object.keys(rowData.attendance || {});
-
-    if (attendanceDates.length > 0) {
-        // Use dates from JSON
-        attendanceInputs = attendanceDates.map(date =>
-            `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1" value="${rowData.attendance[date] || 0}">`
-        ).join('');
+    
+    if (currentAttendanceDates && currentAttendanceDates.length > 0) {
+        // Use currentAttendanceDates to match the headers
+        attendanceInputs = currentAttendanceDates.map(date => {
+            const attendanceValue = rowData.attendance && rowData.attendance[date] !== undefined ? rowData.attendance[date] : 0;
+            return `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1" value="${attendanceValue}">`;
+        }).join('');
     } else {
-        // Fallback: create 6 default attendance inputs
-        attendanceInputs = Array.from({length: 6}, (_, i) =>
-            `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1">`
-        ).join('');
+        // Fallback: use dates from JSON if currentAttendanceDates is not set
+        const attendanceDates = Object.keys(rowData.attendance || {});
+        if (attendanceDates.length > 0) {
+            attendanceInputs = attendanceDates.map(date =>
+                `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1" value="${rowData.attendance[date] || 0}">`
+            ).join('');
+        } else {
+            // Fallback: create 6 default attendance inputs
+            attendanceInputs = Array.from({length: 6}, (_, i) =>
+                `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1">`
+            ).join('');
+        }
     }
 
     row.innerHTML = `
@@ -3980,8 +4298,8 @@ function addPromoterRowFromJson(rowData, index) {
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][position]" readonly value="${rowData.position || ''}">
             </div>
         </td>
-        <td id="attendanceCell-${index + 1}" style="display: table-cell; width: ${(attendanceDates.length || 6) * 80 + 160}px;">
-            <div style="display: grid; grid-template-columns: repeat(${attendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(attendanceDates.length || 6) * 80 + 160}px;">
+        <td id="attendanceCell-${index + 1}" style="display: table-cell; width: ${((currentAttendanceDates && currentAttendanceDates.length) || 6) * 80 + 160}px;">
+            <div style="display: grid; grid-template-columns: repeat(${(currentAttendanceDates && currentAttendanceDates.length) || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${((currentAttendanceDates && currentAttendanceDates.length) || 6) * 80 + 160}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_total]" readonly value="${rowData.attendance_total || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" value="${rowData.attendance_amount || 0}" oninput="calculateNetAmount(${index + 1})">
@@ -5464,8 +5782,243 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modal && modal.style.display === 'block') {
                 closeSalarySheetSaveModal();
             }
+            const customDateModal = document.getElementById('addCustomDateModal');
+            if (customDateModal && customDateModal.style.display === 'block') {
+                closeAddCustomDateModal();
+            }
         }
     });
+});
+
+// Add Custom Date Modal Functions
+function openAddCustomDateModal() {
+    const modal = document.getElementById('addCustomDateModal');
+    const jobSelect = document.getElementById('job_id');
+    const selectedOption = jobSelect.options[jobSelect.selectedIndex];
+    
+    if (!selectedOption.value) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Job Selected',
+            text: 'Please select a job first before adding custom dates.',
+        });
+        return;
+    }
+    
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('customDateInput').value = '';
+        document.getElementById('customDateError').style.display = 'none';
+        document.getElementById('customDateError').textContent = '';
+    }
+}
+
+function closeAddCustomDateModal() {
+    const modal = document.getElementById('addCustomDateModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.getElementById('customDateInput').value = '';
+        document.getElementById('customDateError').style.display = 'none';
+        document.getElementById('customDateError').textContent = '';
+    }
+}
+
+function addCustomDateToAttendance() {
+    const dateInput = document.getElementById('customDateInput');
+    const errorDiv = document.getElementById('customDateError');
+    const selectedDate = dateInput.value;
+    
+    // Validate date
+    if (!selectedDate) {
+        errorDiv.textContent = 'Please select a date.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Check if date already exists
+    if (currentAttendanceDates.includes(selectedDate)) {
+        errorDiv.textContent = 'This date is already in the attendance table.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Add date to currentAttendanceDates array (sorted)
+    currentAttendanceDates.push(selectedDate);
+    currentAttendanceDates.sort(); // Sort dates chronologically
+    
+    // Update headers
+    updateAttendanceHeaders(currentAttendanceDates);
+    
+    // Add date column to all existing rows
+    addDateColumnToAllRows(selectedDate);
+    
+    // Close modal
+    closeAddCustomDateModal();
+    
+    // Show success message
+    Swal.fire({
+        icon: 'success',
+        title: 'Date Added',
+        text: `Date ${selectedDate} has been added to the attendance table.`,
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+function addDateColumnToAllRows(newDate) {
+    const rows = document.querySelectorAll('#promoterRows tr');
+    const dateIndex = currentAttendanceDates.indexOf(newDate);
+    
+    rows.forEach(row => {
+        const attendanceCell = row.querySelector('td:nth-child(4)');
+        if (attendanceCell) {
+            const gridContainer = attendanceCell.querySelector('div');
+            if (gridContainer) {
+                const rowNum = getRowNumberFromElement(row);
+                
+                // Get existing inputs
+                const existingInputs = Array.from(gridContainer.querySelectorAll('input[name*="[attendance]"]'));
+                const totalInput = gridContainer.querySelector('input[name*="[attendance_total]"]');
+                const amountInput = gridContainer.querySelector('input[name*="[attendance_amount]"]');
+                
+                // Clear container
+                gridContainer.innerHTML = '';
+                
+                // Recreate all inputs in correct order
+                currentAttendanceDates.forEach(date => {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'table-input-small';
+                    input.name = `rows[${rowNum}][attendance][${date}]`;
+                    input.min = '0';
+                    input.max = '1';
+                    input.step = '1';
+                    input.placeholder = '0/1';
+                    input.onchange = () => {
+                        calculateRowTotal(rowNum);
+                    };
+                    
+                    // Preserve existing value if it exists
+                    const existingInput = existingInputs.find(inp => {
+                        const match = inp.name.match(/\[attendance\]\[([^\]]+)\]/);
+                        return match && match[1] === date;
+                    });
+                    if (existingInput) {
+                        input.value = existingInput.value;
+                    }
+                    
+                    gridContainer.appendChild(input);
+                });
+                
+                // Re-add Total input
+                if (totalInput) {
+                    const newTotalInput = document.createElement('input');
+                    newTotalInput.type = 'number';
+                    newTotalInput.className = 'table-input-small calculated-cell';
+                    newTotalInput.name = totalInput.name;
+                    newTotalInput.readOnly = true;
+                    newTotalInput.value = totalInput.value || '';
+                    gridContainer.appendChild(newTotalInput);
+                } else {
+                    const totalInputNew = document.createElement('input');
+                    totalInputNew.type = 'number';
+                    totalInputNew.className = 'table-input-small calculated-cell';
+                    totalInputNew.name = `rows[${rowNum}][attendance_total]`;
+                    totalInputNew.readOnly = true;
+                    gridContainer.appendChild(totalInputNew);
+                }
+                
+                // Re-add Amount input
+                if (amountInput) {
+                    const newAmountInput = document.createElement('input');
+                    newAmountInput.type = 'number';
+                    newAmountInput.step = '0.01';
+                    newAmountInput.className = 'table-input-small';
+                    newAmountInput.name = amountInput.name;
+                    newAmountInput.title = 'Attendance Amount (Auto-calculated, but editable)';
+                    newAmountInput.value = amountInput.value || '';
+                    newAmountInput.setAttribute('oninput', `calculateNetAmount(${rowNum})`);
+                    
+                    // Preserve custom amount attributes
+                    if (amountInput.hasAttribute('data-custom-amount')) {
+                        newAmountInput.setAttribute('data-custom-amount', amountInput.getAttribute('data-custom-amount'));
+                    }
+                    if (amountInput.hasAttribute('data-manually-edited')) {
+                        newAmountInput.setAttribute('data-manually-edited', amountInput.getAttribute('data-manually-edited'));
+                    }
+                    if (amountInput.hasAttribute('data-loaded-from-db')) {
+                        newAmountInput.setAttribute('data-loaded-from-db', amountInput.getAttribute('data-loaded-from-db'));
+                    }
+                    if (amountInput.hasAttribute('data-last-synced-amount')) {
+                        newAmountInput.setAttribute('data-last-synced-amount', amountInput.getAttribute('data-last-synced-amount'));
+                    }
+                    
+                    gridContainer.appendChild(newAmountInput);
+                } else {
+                    const amountInputNew = document.createElement('input');
+                    amountInputNew.type = 'number';
+                    amountInputNew.step = '0.01';
+                    amountInputNew.className = 'table-input-small';
+                    amountInputNew.name = `rows[${rowNum}][attendance_amount]`;
+                    amountInputNew.title = 'Attendance Amount (Auto-calculated, but editable)';
+                    amountInputNew.setAttribute('oninput', `calculateNetAmount(${rowNum})`);
+                    gridContainer.appendChild(amountInputNew);
+                }
+                
+                // Update grid template and width
+                const baseWidth = 160;
+                const dateWidth = 80;
+                const numDates = currentAttendanceDates.length || 6;
+                const totalWidth = (numDates * dateWidth) + baseWidth;
+                
+                gridContainer.style.gridTemplateColumns = `repeat(${numDates}, 1fr) 1fr 1.5fr`;
+                gridContainer.style.width = `${totalWidth}px`;
+                attendanceCell.style.width = `${totalWidth}px`;
+                
+                // Recalculate row total
+                calculateRowTotal(rowNum);
+            }
+        }
+    });
+}
+
+// Event listeners for Add Custom Date Modal
+document.addEventListener('DOMContentLoaded', function() {
+    const addCustomDateModal = document.getElementById('addCustomDateModal');
+    const closeAddCustomDateModalBtn = document.getElementById('closeAddCustomDateModal');
+    const cancelAddCustomDateBtn = document.getElementById('cancelAddCustomDateBtn');
+    const addCustomDateBtnModal = document.getElementById('addCustomDateBtnModal');
+    
+    if (closeAddCustomDateModalBtn) {
+        closeAddCustomDateModalBtn.addEventListener('click', closeAddCustomDateModal);
+    }
+    
+    if (cancelAddCustomDateBtn) {
+        cancelAddCustomDateBtn.addEventListener('click', closeAddCustomDateModal);
+    }
+    
+    if (addCustomDateBtnModal) {
+        addCustomDateBtnModal.addEventListener('click', addCustomDateToAttendance);
+    }
+    
+    if (addCustomDateModal) {
+        addCustomDateModal.addEventListener('click', function(e) {
+            if (e.target === addCustomDateModal) {
+                closeAddCustomDateModal();
+            }
+        });
+    }
+    
+    // Allow Enter key to submit
+    const customDateInput = document.getElementById('customDateInput');
+    if (customDateInput) {
+        customDateInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomDateToAttendance();
+            }
+        });
+    }
 });
 </script>
 @endsection
