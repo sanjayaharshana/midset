@@ -20,7 +20,7 @@
                 <p class="header-subtitle">Create and manage salary sheets for your organization</p>
             </div>
         </div>
-        
+
         <!-- Professional Toolbar Section -->
         <div class="toolbar-section">
             <div class="toolbar-container">
@@ -44,9 +44,9 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="toolbar-divider"></div>
-                
+
                 <div class="toolbar-group secondary-tools">
                     <div class="toolbar-label">Configuration</div>
                     <div class="toolbar-buttons">
@@ -84,9 +84,9 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="toolbar-divider"></div>
-                
+
                 <div class="toolbar-group utility-tools">
                     <div class="toolbar-label">Utilities</div>
                     <div class="toolbar-buttons">
@@ -161,6 +161,18 @@
                     </div>
                     <h3 style="color: #475569; margin-bottom: 0.5rem;">Please Select a Job ID</h3>
                     <p style="color: #64748b; margin: 0;">Choose a job from the dropdown above to start creating the salary sheet.</p>
+                </div>
+
+                <!-- No End Date Message -->
+                <div id="noEndDateMessage" style="display: none; text-align: center; padding: 1.5rem; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 0.5rem; margin: 1rem 0;">
+                    <div style="color: #92400e; font-size: 1rem; margin-bottom: 0.5rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 0.5rem auto; display: block;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <p style="color: #92400e; margin: 0; font-weight: 500;">This project not assigned to ending date</p>
                 </div>
 
                 <!-- Salary Sheet Table -->
@@ -788,7 +800,7 @@
     .toolbar-container {
         gap: 1.5rem;
     }
-    
+
     .toolbar-divider {
         display: none;
     }
@@ -798,31 +810,31 @@
     .header-title h3 {
         font-size: 1.25rem;
     }
-    
+
     .header-subtitle {
         font-size: 0.8rem;
     }
-    
+
     .toolbar-section {
         padding: 1rem 0;
     }
-    
+
     .toolbar-container {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
         padding-left: 1rem;
     }
-    
+
     .toolbar-group {
         align-items: stretch;
     }
-    
+
     .toolbar-buttons {
         justify-content: center;
         flex-wrap: wrap;
     }
-    
+
     .toolbar-btn {
         padding: 0.625rem 1rem;
         font-size: 0.8rem;
@@ -834,17 +846,17 @@
     .toolbar-container {
         padding-left: 0.75rem;
     }
-    
+
     .toolbar-buttons {
         flex-direction: column;
         width: 100%;
     }
-    
+
     .toolbar-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     .toolbar-label {
         text-align: center;
     }
@@ -1787,36 +1799,36 @@ let allowanceRuleCounter = 0;
 function updatePaymentHeaders(jobAllowances = []) {
     const paymentHeaders = document.getElementById('paymentHeaders');
     const paymentColumn = document.getElementById('paymentColumn');
-    
+
     if (!paymentHeaders || !paymentColumn) return;
-    
+
     // Base columns: Amount, Expenses, Hold For 8 weeks, Net Amount
     const baseColumns = 4;
     const allowanceColumns = jobAllowances.length;
     const totalColumns = baseColumns + allowanceColumns;
-    
+
     // Update grid template columns
     const columnWidth = 533 + (allowanceColumns * 100); // Add 100px per allowance column
     paymentHeaders.style.gridTemplateColumns = `repeat(${totalColumns}, 1fr)`;
     paymentHeaders.style.width = `${columnWidth}px`;
-    
+
     // Create header HTML
     let headerHTML = `
         <div style="text-align: center; font-size: 0.7rem;">Amount</div>
         <div style="text-align: center; font-size: 0.7rem;">Expenses</div>
         <div style="text-align: center; font-size: 0.7rem;">Hold For 8 weeks</div>
     `;
-    
+
     // Add allowance headers
     jobAllowances.forEach(allowance => {
         headerHTML += `<div style="text-align: center; font-size: 0.7rem;">${allowance.allowance_name}</div>`;
     });
-    
+
     // Add Net Amount header
     headerHTML += `<div style="text-align: center; font-size: 0.7rem;">Net Amount</div>`;
-    
+
     paymentHeaders.innerHTML = headerHTML;
-    
+
     console.log('Updated payment headers with allowances:', jobAllowances);
 }
 
@@ -1826,30 +1838,30 @@ function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {
     const allowanceColumns = jobAllowances.length;
     const totalColumns = baseColumns + allowanceColumns;
     const columnWidth = 533 + (allowanceColumns * 100);
-    
+
     let rowHTML = `
         <div style="display: grid; grid-template-columns: repeat(${totalColumns}, 1fr); gap: 0.75rem; width: ${columnWidth}px;">
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][amount]" title="Amount (Editable - can be different from Attendance Amount)" value="${defaultValues.amount || 0}" oninput="markAsCustom(this, 'amount'); calculateRowNet(${rowNumber})" ${defaultValues.amount ? 'data-custom-amount="true" data-loaded-from-db="true"' : ''}>
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][expenses]" title="Expenses (Editable)" onchange="markAsCustom(this, 'expenses'); calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.expenses || 0}" ${defaultValues.expenses ? 'data-custom-expenses="true" data-loaded-from-db="true"' : ''}>
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][hold_for_8_weeks]" onchange="calculateRowNet(${rowNumber})" placeholder="0.00" value="${defaultValues.hold_for_8_weeks || 0}">
     `;
-    
+
     // Add allowance input fields
     jobAllowances.forEach((allowance, index) => {
         const defaultValue = defaultValues[allowance.allowance_name] || allowance.price || 0;
         rowHTML += `
-            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][allowances][${allowance.allowance_name}]" 
-                   value="${defaultValue}" placeholder="0.00" onchange="calculateRowNet(${rowNumber})" 
+            <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][allowances][${allowance.allowance_name}]"
+                   value="${defaultValue}" placeholder="0.00" onchange="calculateRowNet(${rowNumber})"
                    title="${allowance.allowance_name}">
         `;
     });
-    
+
     // Add Net Amount field
     rowHTML += `
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][net_amount]" title="Net Amount (Auto-calculated, but editable)" value="${defaultValues.net_amount || 0}" oninput="calculateGrandTotal()">
         </div>
     `;
-    
+
     return rowHTML;
 }
 
@@ -1857,21 +1869,21 @@ function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {
 function getCurrentJobAllowances() {
     const selectedJobId = document.getElementById('job_id').value;
     if (!selectedJobId) return [];
-    
+
     const selectedJob = jobs.find(job => job.id == selectedJobId);
     if (!selectedJob || !selectedJob.allowance) return [];
-    
+
     return selectedJob.allowance || [];
 }
 
 // Function to update all existing payment rows with new allowance columns
 function updateAllPaymentRows(jobAllowances = []) {
     const rows = document.querySelectorAll('#promoterRows tr');
-    
+
     rows.forEach((row, index) => {
         const rowNumber = index + 1;
         const paymentCell = document.getElementById(`paymentCell-${rowNumber}`);
-        
+
         if (paymentCell) {
             // Get current values from existing inputs
             const currentValues = {
@@ -1880,7 +1892,7 @@ function updateAllPaymentRows(jobAllowances = []) {
                 hold_for_8_weeks: paymentCell.querySelector('input[name*="[hold_for_8_weeks]"]')?.value || 0,
                 net_amount: paymentCell.querySelector('input[name*="[net_amount]"]')?.value || 0
             };
-            
+
             // Get current allowance values
             const allowanceInputs = paymentCell.querySelectorAll('input[name*="[allowances]"]');
             allowanceInputs.forEach(input => {
@@ -1889,12 +1901,12 @@ function updateAllPaymentRows(jobAllowances = []) {
                     currentValues[allowanceName] = input.value || 0;
                 }
             });
-            
+
             // Generate new payment row HTML with allowance columns
             paymentCell.innerHTML = generatePaymentRowHTML(rowNumber, jobAllowances, currentValues);
         }
     });
-    
+
     console.log('Updated all payment rows with allowance columns');
 }
 
@@ -1929,7 +1941,7 @@ function addAllowanceRow() {
     const container = document.getElementById('allowanceRulesContainer');
 
     console.log('Adding allowance row. Allowances available:', allowances);
-    console.log('Allowances map result:', allowances.map(allowance => 
+    console.log('Allowances map result:', allowances.map(allowance =>
         `<option value="${allowance.name}">${allowance.name}</option>`
     ).join(''));
 
@@ -1952,7 +1964,7 @@ function addAllowanceRow() {
             <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #374151;">Allowance Name</label>
             <select class="form-control" name="allowance_rules[${allowanceRuleCounter}][allowance_name]" required>
                 <option value="">Select Allowance</option>
-                ${allowances.map(allowance => 
+                ${allowances.map(allowance =>
                     `<option value="${allowance.name}">${allowance.name}</option>`
                 ).join('')}
             </select>
@@ -1992,9 +2004,9 @@ function clearAllowanceRules() {
 function loadExistingAllowanceRules() {
     const selectedJobId = document.getElementById('job_id').value;
     const selectedJob = jobs.find(job => job.id == selectedJobId);
-    
+
     clearAllowanceRules();
-    
+
     if (selectedJob && selectedJob.allowance && Array.isArray(selectedJob.allowance)) {
         selectedJob.allowance.forEach(allowanceRule => {
             addAllowanceRow();
@@ -2002,7 +2014,7 @@ function loadExistingAllowanceRules() {
             if (lastRow) {
                 const allowanceSelect = lastRow.querySelector('select[name*="[allowance_name]"]');
                 const priceInput = lastRow.querySelector('input[name*="[price]"]');
-                
+
                 if (allowanceSelect) allowanceSelect.value = allowanceRule.allowance_name || '';
                 if (priceInput) priceInput.value = allowanceRule.price || '';
             }
@@ -2024,11 +2036,11 @@ function saveAllowanceRules() {
 
     const allowanceRules = [];
     const rows = document.querySelectorAll('.allowance-rule-row');
-    
+
     rows.forEach(row => {
         const allowanceName = row.querySelector('select[name*="[allowance_name]"]').value;
         const price = row.querySelector('input[name*="[price]"]').value;
-        
+
         if (allowanceName && price) {
             allowanceRules.push({
                 allowance_name: allowanceName,
@@ -2067,20 +2079,20 @@ function saveAllowanceRules() {
                 confirmButtonText: 'OK'
             });
             closeAllowanceRuleModal();
-            
+
             // Update the jobs array with the new data
             const jobIndex = jobs.findIndex(job => job.id == selectedJobId);
             if (jobIndex !== -1) {
                 jobs[jobIndex].allowance = allowanceRules;
             }
-            
+
             // Update payment headers with new allowance rules
             const jobAllowances = getCurrentJobAllowances();
             updatePaymentHeaders(jobAllowances);
-            
+
             // Update all existing payment rows
             updateAllPaymentRows(jobAllowances);
-            
+
             console.log('Allowance rules saved and UI updated successfully');
         } else {
             Swal.fire({
@@ -2128,21 +2140,19 @@ function addPromoterRow() {
 
     // Generate attendance inputs based on current dates
     let attendanceInputs = '';
+    const numDates = currentAttendanceDates ? currentAttendanceDates.length : 0;
     console.log('addPromoterRow - currentAttendanceDates:', currentAttendanceDates);
-    console.log('addPromoterRow - currentAttendanceDates.length:', currentAttendanceDates ? currentAttendanceDates.length : 'undefined');
+    console.log('addPromoterRow - currentAttendanceDates.length:', numDates);
 
     if (currentAttendanceDates && currentAttendanceDates.length > 0) {
         attendanceInputs = currentAttendanceDates.map(date =>
             `<input type="number" class="table-input-small" name="rows[${nextRowNumber}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${nextRowNumber})" placeholder="0/1">`
         ).join('');
         console.log('addPromoterRow - Generated attendance inputs with dates:', attendanceInputs.substring(0, 200));
-    } else {
-        // Fallback: create 6 default attendance inputs if no dates are available
-        attendanceInputs = Array.from({length: 6}, (_, i) =>
-            `<input type="number" class="table-input-small" name="rows[${nextRowNumber}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${nextRowNumber})" placeholder="0/1">`
-        ).join('');
-        console.log('addPromoterRow - Generated fallback attendance inputs:', attendanceInputs.substring(0, 200));
     }
+    // If no dates, don't add any attendance inputs (empty columns)
+
+    const attendanceWidth = numDates * 80 + 160; // Base width for Total and Amount columns
 
     row.innerHTML = `
         <td style="text-align: center; font-weight: bold;">${nextRowNumber}</td>
@@ -2162,8 +2172,8 @@ function addPromoterRow() {
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][position]" readonly>
             </div>
         </td>
-        <td id="attendanceCell-${nextRowNumber}" style="display: table-cell; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
-            <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${(currentAttendanceDates.length || 6) * 80 + 160}px;">
+        <td id="attendanceCell-${nextRowNumber}" style="display: table-cell; width: ${attendanceWidth}px;">
+            <div style="display: grid; grid-template-columns: repeat(${numDates}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${attendanceWidth}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${nextRowNumber}][attendance_total]" readonly>
                 <input type="number" step="0.01" class="table-input-small" name="rows[${nextRowNumber}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" oninput="calculateNetAmount(${nextRowNumber})">
@@ -2194,7 +2204,7 @@ function addPromoterRow() {
 
     // Update the global rowCounter to match the actual number of rows
     rowCounter = nextRowNumber;
-    
+
     // Update promoter dropdowns to hide already selected promoters
     updatePromoterDropdowns();
 
@@ -2301,24 +2311,24 @@ function updatePromoterTooltipFromOption(inputElement, optionElement) {
 function getSelectedPromoterIds() {
     const selectedIds = [];
     const promoterSelects = document.querySelectorAll('select[name*="[promoter_id]"]');
-    
+
     promoterSelects.forEach(select => {
         if (select.value && select.value !== '') {
             selectedIds.push(select.value);
         }
     });
-    
+
     return selectedIds;
 }
 
 function updatePromoterDropdowns() {
     const selectedIds = getSelectedPromoterIds();
     const promoterSelects = document.querySelectorAll('select[name*="[promoter_id]"]');
-    
+
     promoterSelects.forEach(select => {
         const currentValue = select.value;
         const options = select.querySelectorAll('option');
-        
+
         options.forEach(option => {
             if (option.value === '') {
                 // Always show the "Select" option
@@ -2389,7 +2399,7 @@ function showAllPromoters(rowNum, inputEl) {
         handlePromoterSearchInput(rowNum, inputEl);
         return;
     }
-    
+
     // Show all promoters when focused
     searchPromoters(rowNum, '', 20, inputEl);
 }
@@ -2423,7 +2433,7 @@ document.addEventListener('click', (e) => {
 
 function searchPromoters(rowNum, q, limit = 10, inputEl = null) {
     const box = document.getElementById('promoterSuggestions-' + rowNum);
-    
+
     if (promoterSearchDebounceTimers[rowNum]) {
         clearTimeout(promoterSearchDebounceTimers[rowNum]);
     }
@@ -2720,14 +2730,14 @@ if (typeof window !== 'undefined') {
 function validatePromoterSelection(selectElement) {
     const selectedValue = selectElement.value;
     if (!selectedValue) return true; // Allow empty selection
-    
+
     const selectedIds = getSelectedPromoterIds();
     const duplicateCount = selectedIds.filter(id => id === selectedValue).length;
-    
+
     if (duplicateCount > 1) {
         // Reset to empty selection
         selectElement.value = '';
-        
+
         // Show error message
         Swal.fire({
             icon: 'error',
@@ -2735,10 +2745,10 @@ function validatePromoterSelection(selectElement) {
             text: 'This promoter is already selected in another row. Please choose a different promoter.',
             confirmButtonText: 'OK'
         });
-        
+
         return false;
     }
-    
+
     return true;
 }
 
@@ -2747,7 +2757,7 @@ async function updatePromoterDetails(rowNum, selectElement) {
     if (!validatePromoterSelection(selectElement)) {
         return; // Stop processing if validation fails
     }
-    
+
     const selectedOption = selectElement.options[selectElement.selectedIndex];
     const row = selectElement.closest('tr');
 
@@ -2765,10 +2775,10 @@ async function updatePromoterDetails(rowNum, selectElement) {
         const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
         const presentDays = totalInput ? parseFloat(totalInput.value) || 0 : 0;
         await calculateAttendanceAmount(rowNum, presentDays);
-        
+
         // Apply job settings to this row when promoter changes
         applyJobSettingsToRow(rowNum);
-        
+
         // Update all promoter dropdowns to hide selected promoters
         updatePromoterDropdowns();
     } else {
@@ -2786,7 +2796,7 @@ async function updatePromoterDetails(rowNum, selectElement) {
         if (attendanceAmountInput) {
             attendanceAmountInput.value = '0.00';
         }
-        
+
         // Update all promoter dropdowns when selection is cleared
         updatePromoterDropdowns();
     }
@@ -2798,27 +2808,27 @@ function updateCoordinatorDisplay(rowNum, selectElement) {
 
     if (selectedOption && selectedOption.dataset.name) {
         row.querySelector('input[name="rows[' + rowNum + '][current_coordinator]"]').value = selectedOption.dataset.name;
-        
+
         // Calculate coordinator fee based on present days
         calculateCoordinatorFee(rowNum);
-        
+
         // Apply job settings to this row when coordinator changes
         applyJobSettingsToRow(rowNum);
-        
+
         // Trigger net calculation since coordinator fee changed
         calculateRowNet(rowNum);
     } else {
         row.querySelector('input[name="rows[' + rowNum + '][current_coordinator]"]').value = '';
-        
+
         // Clear coordinator fee when no coordinator selected
         const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
         if (coordinationFeeInput) {
             coordinationFeeInput.value = '0.00';
         }
-        
+
         // Apply job settings to this row when coordinator changes
         applyJobSettingsToRow(rowNum);
-        
+
         // Trigger net calculation
         calculateRowNet(rowNum);
     }
@@ -2901,11 +2911,12 @@ function updateAttendanceDates() {
         console.log('updateAttendanceDates() already running, skipping...');
         return;
     }
-    
+
     isUpdatingAttendanceDates = true;
     const jobSelect = document.getElementById('job_id');
     const selectedOption = jobSelect.options[jobSelect.selectedIndex];
     const noJobMessage = document.getElementById('noJobMessage');
+    const noEndDateMessage = document.getElementById('noEndDateMessage');
     const salaryTableContainer = document.getElementById('salaryTableContainer');
     const addPromoterBtn = document.getElementById('addPromoterBtn');
     const salaryRuleBtn = document.getElementById('salaryRuleBtn');
@@ -2917,11 +2928,19 @@ function updateAttendanceDates() {
         const endDate = selectedOption.getAttribute('data-end-date');
         const jobId = selectedOption.value;
 
-        if (startDate && endDate) {
-            // Start with dates from job date range
-            const jobDates = generateDateRange(startDate, endDate);
-            const allDates = new Set(jobDates);
-            
+        // Check if end date is null
+        if (!endDate || endDate === 'null' || endDate === '') {
+            // Show message
+            if (noEndDateMessage) {
+                noEndDateMessage.style.display = 'block';
+            }
+            if (noJobMessage) {
+                noJobMessage.style.display = 'none';
+            }
+
+            // Start with empty dates, but fetch existing salary sheets to get custom dates
+            const allDates = new Set();
+
             // Fetch existing salary sheets to get custom dates
             fetch(`/admin/salary-sheets/by-job/${jobId}`, {
                 method: 'GET',
@@ -2962,15 +2981,34 @@ function updateAttendanceDates() {
                         }
                     });
                 }
-                
+
                 // Convert Set to sorted array
                 const finalDates = Array.from(allDates).sort();
-                
-                // Update attendance headers and rows with all dates (including custom ones)
+
+                // Update attendance headers and rows with custom dates
                 updateAttendanceHeaders(finalDates);
                 updateExistingRows(finalDates);
                 currentAttendanceDates = finalDates;
-                
+
+                // Show table but with custom dates if available
+                if (salaryTableContainer) {
+                    salaryTableContainer.style.display = 'block';
+                }
+                if (attendanceLegend) {
+                    attendanceLegend.style.display = finalDates.length > 0 ? 'block' : 'none';
+                }
+
+                // Enable buttons
+                if (addPromoterBtn) addPromoterBtn.disabled = false;
+                if (salaryRuleBtn) salaryRuleBtn.disabled = false;
+                if (allowanceRuleBtn) allowanceRuleBtn.disabled = false;
+
+                // Enable add custom date button when no end date (only allow custom dates if null end date)
+                const addCustomDateBtn = document.getElementById('addCustomDateBtn');
+                if (addCustomDateBtn) {
+                    addCustomDateBtn.disabled = false;
+                }
+
                 // Load row data from the fetched salary sheets (if available)
                 if (data.success && data.salarySheets && data.salarySheets.length > 0) {
                     // Get the most recent salary sheet
@@ -2990,7 +3028,7 @@ function updateAttendanceDates() {
                                     statusSelect.value = jsonData.status;
                                 }
                             }
-                            
+
                             // Update table rows with the data
                             if (jsonData.rows && typeof jsonData.rows === 'object' && Object.keys(jsonData.rows).length > 0) {
                                 clearAllRows();
@@ -3001,7 +3039,7 @@ function updateAttendanceDates() {
                                         rowIndex++;
                                     }
                                 }
-                                
+
                                 // Recalculate totals after loading
                                 setTimeout(() => {
                                     const rows = document.querySelectorAll('#promoterRows tr');
@@ -3026,7 +3064,7 @@ function updateAttendanceDates() {
                                 addPromoterRow();
                                 calculateGrandTotal();
                             }
-                            
+
                             // Continue with other initialization
                             initializeAfterDatesUpdate();
                             isUpdatingAttendanceDates = false;
@@ -3045,7 +3083,7 @@ function updateAttendanceDates() {
                     // No salary sheets found - clear existing data and reset
                     clearAllRows();
                     addPromoterRow(); // Add one empty row
-                    
+
                     // Reset form fields
                     const sheetNumberInput = document.getElementById('sheet_number');
                     if (sheetNumberInput) {
@@ -3055,10 +3093,199 @@ function updateAttendanceDates() {
                     if (statusSelect) {
                         statusSelect.value = 'draft';
                     }
-                    
+
                     // Reset grand total
                     calculateGrandTotal();
-                    
+
+                    // Continue with initialization
+                    initializeAfterDatesUpdate();
+                    isUpdatingAttendanceDates = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching custom dates:', error);
+                // Fallback to empty dates if fetch fails
+                currentAttendanceDates = [];
+                updateAttendanceHeaders([]);
+                updateExistingRows([]);
+
+                // Show table but with empty attendance columns
+                if (salaryTableContainer) {
+                    salaryTableContainer.style.display = 'block';
+                }
+                if (attendanceLegend) {
+                    attendanceLegend.style.display = 'none';
+                }
+
+                // Enable buttons
+                if (addPromoterBtn) addPromoterBtn.disabled = false;
+                if (salaryRuleBtn) salaryRuleBtn.disabled = false;
+                if (allowanceRuleBtn) allowanceRuleBtn.disabled = false;
+
+                // Enable add custom date button when no end date
+                const addCustomDateBtn = document.getElementById('addCustomDateBtn');
+                if (addCustomDateBtn) {
+                    addCustomDateBtn.disabled = false;
+                }
+
+                // Clear all rows and add one empty row
+                clearAllRows();
+                addPromoterRow();
+                calculateGrandTotal();
+
+                // Continue with initialization
+                initializeAfterDatesUpdate();
+                isUpdatingAttendanceDates = false;
+            });
+        } else {
+            // Hide no end date message if end date exists
+            if (noEndDateMessage) {
+                noEndDateMessage.style.display = 'none';
+            }
+        }
+
+        if (startDate && endDate) {
+            // Start with dates from job date range
+            const jobDates = generateDateRange(startDate, endDate);
+            const allDates = new Set(jobDates);
+
+            // Fetch existing salary sheets to get custom dates
+            fetch(`/admin/salary-sheets/by-job/${jobId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Extract custom dates from existing salary sheets
+                if (data.success && data.salarySheets && data.salarySheets.length > 0) {
+                    data.salarySheets.forEach(sheet => {
+                        if (sheet.items && Array.isArray(sheet.items)) {
+                            sheet.items.forEach(item => {
+                                if (item.attendance_data && item.attendance_data.attendance) {
+                                    Object.keys(item.attendance_data.attendance).forEach(date => {
+                                        allDates.add(date);
+                                    });
+                                }
+                            });
+                        }
+                        // Also check if sheet has direct attendance_data (for backward compatibility)
+                        if (sheet.attendance_data && typeof sheet.attendance_data === 'object') {
+                            if (sheet.attendance_data.attendance) {
+                                Object.keys(sheet.attendance_data.attendance).forEach(date => {
+                                    allDates.add(date);
+                                });
+                            } else {
+                                // Direct date keys
+                                Object.keys(sheet.attendance_data).forEach(date => {
+                                    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                        allDates.add(date);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Convert Set to sorted array
+                const finalDates = Array.from(allDates).sort();
+
+                // Update attendance headers and rows with all dates (including custom ones)
+                updateAttendanceHeaders(finalDates);
+                updateExistingRows(finalDates);
+                currentAttendanceDates = finalDates;
+
+                // Load row data from the fetched salary sheets (if available)
+                if (data.success && data.salarySheets && data.salarySheets.length > 0) {
+                    // Get the most recent salary sheet
+                    const mostRecentSheet = data.salarySheets[0];
+                    // Fetch JSON data for this sheet to load the rows
+                    fetch(`/admin/salary-sheets/${mostRecentSheet.id}/json`)
+                        .then(response => response.json())
+                        .then(jsonData => {
+                            console.log('Loading row data from salary sheet:', jsonData);
+                            // Update form fields (but skip job_id update to prevent loop)
+                            if (jsonData.sheet_number) {
+                                document.getElementById('sheet_number').value = jsonData.sheet_number;
+                            }
+                            if (jsonData.status) {
+                                const statusSelect = document.querySelector('select[name="status"]');
+                                if (statusSelect) {
+                                    statusSelect.value = jsonData.status;
+                                }
+                            }
+
+                            // Update table rows with the data
+                            if (jsonData.rows && typeof jsonData.rows === 'object' && Object.keys(jsonData.rows).length > 0) {
+                                clearAllRows();
+                                let rowIndex = 0;
+                                for (const [rowKey, rowData] of Object.entries(jsonData.rows)) {
+                                    if (rowData.promoter_id) {
+                                        addPromoterRowFromJson(rowData, rowIndex);
+                                        rowIndex++;
+                                    }
+                                }
+
+                                // Recalculate totals after loading
+                                setTimeout(() => {
+                                    const rows = document.querySelectorAll('#promoterRows tr');
+                                    rows.forEach((row, index) => {
+                                        const rowNum = index + 1;
+                                        let total = 0;
+                                        const attendanceInputs = row.querySelectorAll('input[name*="[attendance]["]');
+                                        attendanceInputs.forEach(input => {
+                                            total += parseFloat(input.value) || 0;
+                                        });
+                                        const totalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+                                        if (totalInput) {
+                                            totalInput.value = total;
+                                        }
+                                        calculateRowNet(rowNum);
+                                    });
+                                    calculateGrandTotal();
+                                }, 300);
+                            } else {
+                                // No rows in the data - clear and add empty row
+                                clearAllRows();
+                                addPromoterRow();
+                                calculateGrandTotal();
+                            }
+
+                            // Continue with other initialization
+                            initializeAfterDatesUpdate();
+                            isUpdatingAttendanceDates = false;
+                        })
+                        .catch(error => {
+                            console.error('Error loading row data:', error);
+                            // If error loading data, clear existing rows and add empty row
+                            clearAllRows();
+                            addPromoterRow();
+                            calculateGrandTotal();
+                            // Continue with initialization even if row data fails to load
+                            initializeAfterDatesUpdate();
+                            isUpdatingAttendanceDates = false;
+                        });
+                } else {
+                    // No salary sheets found - clear existing data and reset
+                    clearAllRows();
+                    addPromoterRow(); // Add one empty row
+
+                    // Reset form fields
+                    const sheetNumberInput = document.getElementById('sheet_number');
+                    if (sheetNumberInput) {
+                        sheetNumberInput.value = '';
+                    }
+                    const statusSelect = document.querySelector('select[name="status"]');
+                    if (statusSelect) {
+                        statusSelect.value = 'draft';
+                    }
+
+                    // Reset grand total
+                    calculateGrandTotal();
+
                     // Continue with initialization
                     initializeAfterDatesUpdate();
                     isUpdatingAttendanceDates = false;
@@ -3086,16 +3313,16 @@ function updateAttendanceDates() {
         currentAttendanceDates = [];
         updateAttendanceHeaders([]);
         updateExistingRows([]);
-        
+
         // Clear all rows and add one empty row
         clearAllRows();
         addPromoterRow();
-        
+
         // Hide table and show message
         noJobMessage.style.display = 'block';
         salaryTableContainer.style.display = 'none';
         attendanceLegend.style.display = 'none';
-        
+
         // Disable buttons
         addPromoterBtn.disabled = true;
         salaryRuleBtn.disabled = true;
@@ -3104,13 +3331,13 @@ function updateAttendanceDates() {
         if (addCustomDateBtn) {
             addCustomDateBtn.disabled = true;
         }
-        
+
         // Disable Pull Data button when no job is selected
         const pullDataBtn = document.getElementById('pullDataBtn');
         if (pullDataBtn) {
             pullDataBtn.disabled = true;
         }
-        
+
         // Reset auto-pull flag when no job is selected
         hasAutoPulledData = false;
         lastSelectedJobId = null;
@@ -3123,6 +3350,7 @@ function initializeAfterDatesUpdate() {
     const jobSelect = document.getElementById('job_id');
     const selectedOption = jobSelect.options[jobSelect.selectedIndex];
     const noJobMessage = document.getElementById('noJobMessage');
+    const noEndDateMessage = document.getElementById('noEndDateMessage');
     const salaryTableContainer = document.getElementById('salaryTableContainer');
     const addPromoterBtn = document.getElementById('addPromoterBtn');
     const salaryRuleBtn = document.getElementById('salaryRuleBtn');
@@ -3130,6 +3358,10 @@ function initializeAfterDatesUpdate() {
     const attendanceLegend = document.getElementById('attendanceLegend');
 
     if (selectedOption && selectedOption.value) {
+        // Check if end date exists
+        const endDate = selectedOption.getAttribute('data-end-date');
+        const hasEndDate = endDate && endDate !== 'null' && endDate !== '';
+
         // Load position salary rules for the selected job
         loadPositionSalaryRules();
 
@@ -3150,10 +3382,19 @@ function initializeAfterDatesUpdate() {
             pullDataBtn.disabled = false;
         }
 
-        // Show table and hide message
+        // Show table and hide messages
         if (noJobMessage) noJobMessage.style.display = 'none';
         if (salaryTableContainer) salaryTableContainer.style.display = 'block';
-        if (attendanceLegend) attendanceLegend.style.display = 'block';
+
+        // Show/hide attendance legend based on whether there are dates
+        if (attendanceLegend) {
+            attendanceLegend.style.display = (currentAttendanceDates && currentAttendanceDates.length > 0) ? 'block' : 'none';
+        }
+
+        // Hide no end date message if end date exists
+        if (noEndDateMessage && hasEndDate) {
+            noEndDateMessage.style.display = 'none';
+        }
 
         // Enable buttons
         if (addPromoterBtn) addPromoterBtn.disabled = false;
@@ -3161,7 +3402,8 @@ function initializeAfterDatesUpdate() {
         if (allowanceRuleBtn) allowanceRuleBtn.disabled = false;
         const addCustomDateBtn = document.getElementById('addCustomDateBtn');
         if (addCustomDateBtn) {
-            addCustomDateBtn.disabled = false;
+            // Enable add custom date button ONLY if no end date (allow custom dates only when end date is null)
+            addCustomDateBtn.disabled = hasEndDate;
         }
 
         // Initialize horizontal scroll functionality
@@ -3194,10 +3436,10 @@ function updateAttendanceHeaders(dates) {
     // Always show attendance column (either with dates or fallback)
     attendanceColumn.style.display = 'table-cell';
 
-    // Calculate dynamic width based on number of dates (use 6 as fallback)
+    // Calculate dynamic width based on number of dates
     const baseWidth = 160; // Base width for Total and Amount columns (increased for wider amount field)
     const dateWidth = 80; // Width per date column
-    const numDates = dates.length || 6; // Use 6 as fallback when no dates
+    const numDates = dates.length; // Don't use fallback - show empty if no dates
     const totalWidth = (numDates * dateWidth) + baseWidth;
 
     // Update attendance column width
@@ -3212,7 +3454,7 @@ function updateAttendanceHeaders(dates) {
     // Clear existing headers
     headersContainer.innerHTML = '';
 
-    // Add date headers (either real dates or fallback)
+    // Add date headers (only if dates exist)
     if (dates.length > 0) {
         // Use real dates
         dates.forEach(date => {
@@ -3222,16 +3464,8 @@ function updateAttendanceHeaders(dates) {
             dateDiv.textContent = date;
             headersContainer.appendChild(dateDiv);
         });
-    } else {
-        // Use fallback date headers (Day 1, Day 2, etc.)
-        for (let i = 0; i < 6; i++) {
-            const dateDiv = document.createElement('div');
-            dateDiv.style.textAlign = 'center';
-            dateDiv.style.fontSize = '0.7rem';
-            dateDiv.textContent = `Day ${i+1}`;
-            headersContainer.appendChild(dateDiv);
-        }
     }
+    // If no dates, don't add any date headers (empty columns)
 
     // Add Total and Amount headers
     const totalDiv = document.createElement('div');
@@ -3255,10 +3489,10 @@ function updateExistingRows(dates) {
             // Always show attendance cell (either with dates or fallback)
             attendanceCell.style.display = 'table-cell';
 
-            // Calculate dynamic width based on number of dates (use 6 as fallback)
+            // Calculate dynamic width based on number of dates
             const baseWidth = 160; // Base width for Total and Amount columns (increased for wider amount field)
             const dateWidth = 80; // Width per date column
-            const numDates = dates.length || 6; // Use 6 as fallback when no dates
+            const numDates = dates.length; // Don't use fallback - show empty if no dates
             const totalWidth = (numDates * dateWidth) + baseWidth;
 
             // Update attendance cell width
@@ -3273,7 +3507,7 @@ function updateExistingRows(dates) {
                 // Clear existing inputs
                 gridContainer.innerHTML = '';
 
-                // Add date inputs (either real dates or fallback)
+                // Add date inputs (only if dates exist)
                 if (dates.length > 0) {
                     // Use real dates
                     dates.forEach(date => {
@@ -3290,23 +3524,8 @@ function updateExistingRows(dates) {
                         };
                         gridContainer.appendChild(input);
                     });
-                } else {
-                    // Use fallback dates (day1, day2, etc.)
-                    for (let i = 0; i < 6; i++) {
-                        const input = document.createElement('input');
-                        input.type = 'number';
-                        input.className = 'table-input-small';
-                        input.name = `rows[${getRowNumberFromElement(row)}][attendance][day${i+1}]`;
-                        input.min = '0';
-                        input.max = '1';
-                        input.step = '1';
-                        input.placeholder = '0/1';
-                        input.onchange = () => {
-                            calculateRowTotal(getRowNumberFromElement(row));
-                        };
-                        gridContainer.appendChild(input);
-                    }
                 }
+                // If no dates, don't add any date inputs (empty columns)
 
                 // Add Total input
                 const totalInput = document.createElement('input');
@@ -3424,7 +3643,7 @@ function calculateRowTotal(rowNum) {
             // Set flag to indicate attendance was just updated - this will force amount recalculation
             paymentAmountInput.setAttribute('data-attendance-updated', 'true');
         }
-        
+
         // Also clear coordination fee custom flags when attendance is updated
         const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
         if (coordinationFeeInput) {
@@ -3451,19 +3670,19 @@ function calculateRowTotal(rowNum) {
 function calculateCoordinatorFee(rowNum) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
     if (!row) return;
-    
+
     // Get present days
     const attendanceTotalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
     const presentDays = parseFloat(attendanceTotalInput?.value) || 0;
-    
+
     // Get default coordinator fee from selected job data
     const selectedJobId = document.getElementById('job_id').value;
     const selectedJob = jobs.find(job => job.id == selectedJobId);
     const defaultCoordinatorFee = selectedJob ? parseFloat(selectedJob.default_coordinator_fee) || 0 : 0;
-    
+
     // Calculate coordinator fee: default_coordinator_fee * present_days
     const calculatedCoordinatorFee = defaultCoordinatorFee * presentDays;
-    
+
     // Update the coordination fee field ONLY if it's not manually edited
     const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
     if (coordinationFeeInput) {
@@ -3473,7 +3692,7 @@ function calculateCoordinatorFee(rowNum) {
         const loadedFromDb = coordinationFeeInput.dataset.loadedFromDb === 'true';
         const manuallyEdited = coordinationFeeInput.dataset.manuallyEdited === 'true';
         const attendanceUpdated = coordinationFeeInput.dataset.attendanceUpdated === 'true';
-        
+
         // Force update if attendance was just updated (custom fee should be cleared)
         // OR update if:
         // 1. Fee is empty/zero, OR
@@ -3486,14 +3705,14 @@ function calculateCoordinatorFee(rowNum) {
             if (attendanceUpdated) {
                 coordinationFeeInput.removeAttribute('data-attendance-updated');
             }
-            
+
             console.log(`Coordinator Fee Calculation for Row ${rowNum}:`, {
                 presentDays: presentDays,
                 defaultCoordinatorFee: defaultCoordinatorFee,
                 calculatedCoordinatorFee: calculatedCoordinatorFee
             });
         }
-        
+
         // Trigger row net calculation since coordinator fee might have changed
         calculateRowNet(rowNum);
     }
@@ -3517,13 +3736,13 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
         if (paymentAmountInput) {
             paymentAmountInput.value = '0.00';
         }
-        
+
         // Clear coordinator fee when no promoter selected
         const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
         if (coordinationFeeInput) {
             coordinationFeeInput.value = '0.00';
         }
-        
+
         calculateRowNet(rowNum);
         return;
     }
@@ -3545,13 +3764,13 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
         if (paymentAmountInput) {
             paymentAmountInput.value = '0.00';
         }
-        
+
         // Clear coordinator fee when promoter not found
         const coordinationFeeInput = row.querySelector(`input[name="rows[${rowNum}][coordination_fee]"]`);
         if (coordinationFeeInput) {
             coordinationFeeInput.value = '0.00';
         }
-        
+
         calculateRowNet(rowNum);
         return;
     }
@@ -3575,7 +3794,7 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
         // Only update if it's empty or matches previous calculated value (preserve custom edits)
         const currentAttendanceAmount = parseFloat(attendanceAmountInput.value) || 0;
         const previousCalculatedAmount = parseFloat(attendanceAmountInput.dataset.lastCalculatedAmount || 0);
-        
+
         // Only update if empty or matches previous calculation (not manually edited)
         if (currentAttendanceAmount === 0 || currentAttendanceAmount === previousCalculatedAmount) {
             attendanceAmountInput.value = attendanceAmount.toFixed(2);
@@ -3592,7 +3811,7 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
         const loadedFromDb = paymentAmountInput.dataset.loadedFromDb === 'true';
         const manuallyEdited = paymentAmountInput.dataset.manuallyEdited === 'true';
         const attendanceUpdated = paymentAmountInput.dataset.attendanceUpdated === 'true';
-        
+
         // Force update if attendance was just updated (custom amount should be cleared)
         // OR update if:
         // 1. Amount is empty/zero, OR
@@ -3606,10 +3825,10 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
                 paymentAmountInput.removeAttribute('data-attendance-updated');
             }
         }
-        
+
         // Calculate coordinator fee based on present days
         calculateCoordinatorFee(rowNum);
-        
+
         // Trigger net calculation since amount might have changed
         calculateRowNet(rowNum);
     }
@@ -3655,17 +3874,17 @@ function calculateRowNet(rowNum) {
 function updateAmountFromAttendance(rowNum) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][attendance_amount]"])`);
     if (!row) return;
-    
+
     const attendanceAmountInput = row.querySelector(`input[name="rows[${rowNum}][attendance_amount]"]`);
     const amountInput = row.querySelector(`input[name="rows[${rowNum}][amount]"]`);
-    
+
     if (attendanceAmountInput && amountInput) {
         // Only sync if amount field is empty or was previously synced (to preserve custom edits)
         // Check if amount is empty or matches the previous attendance amount
         const currentAmount = parseFloat(amountInput.value) || 0;
         const previousAttendanceAmount = parseFloat(amountInput.dataset.lastSyncedAmount || 0);
         const newAttendanceAmount = parseFloat(attendanceAmountInput.value) || 0;
-        
+
         // Only sync if:
         // 1. Amount is empty/zero, OR
         // 2. Amount matches the previously synced attendance amount (meaning it was auto-synced, not manually edited)
@@ -3781,7 +4000,7 @@ function removeRow(rowNum) {
             if (row) {
                 row.remove();
                 calculateGrandTotal();
-                
+
                 // Update promoter dropdowns after removing a row
                 updatePromoterDropdowns();
 
@@ -3823,7 +4042,7 @@ function loadExistingSalarySheets(jobId) {
         if (data.success && data.salarySheets && data.salarySheets.length > 0) {
             // Extract all unique dates from attendance_data in all salary sheets
             const allDates = new Set();
-            
+
             // Add dates from job date range (if available)
             const jobSelect = document.getElementById('job_id');
             const selectedOption = jobSelect.options[jobSelect.selectedIndex];
@@ -3835,7 +4054,7 @@ function loadExistingSalarySheets(jobId) {
                     jobDates.forEach(date => allDates.add(date));
                 }
             }
-            
+
             // Extract dates from all salary sheet items' attendance_data
             data.salarySheets.forEach(sheet => {
                 if (sheet.items && Array.isArray(sheet.items)) {
@@ -3863,16 +4082,16 @@ function loadExistingSalarySheets(jobId) {
                     }
                 }
             });
-            
+
             // Convert Set to sorted array
             const allDatesArray = Array.from(allDates).sort();
-            
+
             // Update currentAttendanceDates with all dates (including custom ones)
             if (allDatesArray.length > 0) {
                 currentAttendanceDates = allDatesArray;
                 updateAttendanceHeaders(currentAttendanceDates);
             }
-            
+
             // Clear existing rows
             clearAllRows();
 
@@ -3885,7 +4104,7 @@ function loadExistingSalarySheets(jobId) {
                         // Transform item data to match expected structure
                         const rowData = {
                             promoter_id: item.attendance_data?.promoter_id || item.promoter_id,
-                            current_coordinator_id: item.coordinator_details ? 
+                            current_coordinator_id: item.coordinator_details ?
                                 (() => {
                                     // Find coordinator by coordinator_id
                                     const coord = coordinators.find(c => c.coordinator_id === item.coordinator_details.coordinator_id);
@@ -3950,6 +4169,8 @@ function loadSalarySheetAsRow(sheet, index) {
 
     // Build attendance inputs based on current attendance dates
     let attendanceInputs = '';
+    const numDates = currentAttendanceDates ? currentAttendanceDates.length : 0;
+
     if (currentAttendanceDates && currentAttendanceDates.length > 0) {
         currentAttendanceDates.forEach(date => {
             // Check if attendance_data is an object with 'attendance' property or direct date keys
@@ -3965,12 +4186,10 @@ function loadSalarySheetAsRow(sheet, index) {
             }
             attendanceInputs += `<input type="number" class="table-input-small" name="rows[${index}][attendance][${date}]" value="${attendanceValue}" min="0" max="1" step="0.01" onchange="calculateRowTotal(${index})">`;
         });
-    } else {
-        // Fallback for when no dates are available
-        for (let i = 0; i < 6; i++) {
-            attendanceInputs += `<input type="number" class="table-input-small" name="rows[${index}][attendance][day${i+1}]" value="0" min="0" max="1" step="0.01" onchange="calculateRowTotal(${index})">`;
-        }
     }
+    // If no dates, don't add any attendance inputs (empty columns)
+
+    const attendanceWidth = numDates * 80 + 160; // Base width for Total and Amount columns
 
     row.innerHTML = `
         <td style="text-align: center; font-weight: 600; background-color: #f8fafc;">${index + 1}</td>
@@ -3999,8 +4218,8 @@ function loadSalarySheetAsRow(sheet, index) {
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][position]" readonly value="${positionName}">
             </div>
         </td>
-        <td id="attendanceCell-${index}" style="display: ${currentAttendanceDates.length > 0 ? 'table-cell' : 'none'}; width: ${currentAttendanceDates.length > 0 ? (currentAttendanceDates.length * 80 + 160) + 'px' : 'auto'};">
-            <div style="display: grid; grid-template-columns: repeat(${currentAttendanceDates.length || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${currentAttendanceDates.length > 0 ? (currentAttendanceDates.length * 80 + 160) + 'px' : 'auto'};">
+        <td id="attendanceCell-${index}" style="display: table-cell; width: ${attendanceWidth}px;">
+            <div style="display: grid; grid-template-columns: repeat(${numDates}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${attendanceWidth}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index}][attendance_total]" value="${sheet.attendance_total || 0}" readonly>
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index}][attendance_amount]" value="${sheet.attendance_amount || 0}" title="Attendance Amount (Auto-calculated, but editable)" oninput="calculateNetAmount(${index})">
@@ -4047,7 +4266,7 @@ function clearAllRows() {
     const tbody = document.getElementById('promoterRows');
     tbody.innerHTML = '';
     rowCounter = 1;
-    
+
     // Reset auto-pull flag when clearing rows
     hasAutoPulledData = false;
 }
@@ -4056,7 +4275,7 @@ function clearAllRows() {
 function saveSalarySheet() {
     console.log('=== SAVE SALARY SHEET FUNCTION CALLED ===');
     console.log('Save function called'); // Debug log
-    
+
     // Open the modal instead of directly submitting
     openSalarySheetSaveModal();
 }
@@ -4065,11 +4284,11 @@ function saveSalarySheet() {
 document.addEventListener('DOMContentLoaded', function() {
     addPromoterRow();
     generateSheetNumber();
-    
+
     // Add event listeners for allowance modal
     document.getElementById('addAllowanceRowBtn').addEventListener('click', addAllowanceRow);
     document.getElementById('allowanceRuleCloseBtn').addEventListener('click', closeAllowanceRuleModal);
-    
+
     // Handle modal background click to close
     document.addEventListener('click', function(e) {
         if (e.target.id === 'allowanceRuleModal') {
@@ -4244,27 +4463,18 @@ function addPromoterRowFromJson(rowData, index) {
 
     // Generate attendance inputs based on currentAttendanceDates (to match headers)
     let attendanceInputs = '';
-    
+    const numDates = currentAttendanceDates ? currentAttendanceDates.length : 0;
+
     if (currentAttendanceDates && currentAttendanceDates.length > 0) {
         // Use currentAttendanceDates to match the headers
         attendanceInputs = currentAttendanceDates.map(date => {
             const attendanceValue = rowData.attendance && rowData.attendance[date] !== undefined ? rowData.attendance[date] : 0;
             return `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1" value="${attendanceValue}">`;
         }).join('');
-    } else {
-        // Fallback: use dates from JSON if currentAttendanceDates is not set
-        const attendanceDates = Object.keys(rowData.attendance || {});
-        if (attendanceDates.length > 0) {
-            attendanceInputs = attendanceDates.map(date =>
-                `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][${date}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1" value="${rowData.attendance[date] || 0}">`
-            ).join('');
-        } else {
-            // Fallback: create 6 default attendance inputs
-            attendanceInputs = Array.from({length: 6}, (_, i) =>
-                `<input type="number" class="table-input-small" name="rows[${index + 1}][attendance][day${i+1}]" min="0" max="1" step="1" onchange="calculateRowTotal(${index + 1})" placeholder="0/1">`
-            ).join('');
-        }
     }
+    // If no dates, don't add any attendance inputs (empty columns)
+
+    const attendanceWidth = numDates * 80 + 160; // Base width for Total and Amount columns
 
     row.innerHTML = `
         <td style="text-align: center; font-weight: bold;">${index + 1}</td>
@@ -4298,8 +4508,8 @@ function addPromoterRowFromJson(rowData, index) {
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][position]" readonly value="${rowData.position || ''}">
             </div>
         </td>
-        <td id="attendanceCell-${index + 1}" style="display: table-cell; width: ${((currentAttendanceDates && currentAttendanceDates.length) || 6) * 80 + 160}px;">
-            <div style="display: grid; grid-template-columns: repeat(${(currentAttendanceDates && currentAttendanceDates.length) || 6}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${((currentAttendanceDates && currentAttendanceDates.length) || 6) * 80 + 160}px;">
+        <td id="attendanceCell-${index + 1}" style="display: table-cell; width: ${attendanceWidth}px;">
+            <div style="display: grid; grid-template-columns: repeat(${numDates}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${attendanceWidth}px;">
                 ${attendanceInputs}
                 <input type="number" class="table-input-small calculated-cell" name="rows[${index + 1}][attendance_total]" readonly value="${rowData.attendance_total || 0}">
                 <input type="number" step="0.01" class="table-input-small" name="rows[${index + 1}][attendance_amount]" title="Attendance Amount (Auto-calculated, but editable)" value="${rowData.attendance_amount || 0}" oninput="calculateNetAmount(${index + 1})">
@@ -4365,7 +4575,7 @@ function addPromoterRowFromJson(rowData, index) {
         if (totalInput) {
             totalInput.value = total.toFixed(1);
         }
-        
+
         // Mark amount and expenses as custom when loading from database (to prevent overwriting)
         const amountInput = row.querySelector(`input[name="rows[${index + 1}][amount]"]`);
         const expensesInput = row.querySelector(`input[name="rows[${index + 1}][expenses]"]`);
@@ -4377,17 +4587,17 @@ function addPromoterRowFromJson(rowData, index) {
             expensesInput.dataset.customExpenses = 'true';
             expensesInput.dataset.loadedFromDb = 'true';
         }
-        
+
         // DON'T recalculate amounts when loading - the amounts are already loaded from saved data
         // The attendance_amount and amount fields already have the correct values from rowData
-        
+
         // Just trigger net amount calculation to update the display
         calculateRowNet(index + 1);
     }, 100);
 
     // Update promoter dropdowns to hide already selected promoters
     updatePromoterDropdowns();
-    
+
     console.log(`Row ${index + 1} added successfully`);
 }
 
@@ -4402,7 +4612,7 @@ function pullExistingData(isAutoPull = false) {
     }
 
     console.log('Pulling existing data for job:', selectedJobId, isAutoPull ? '(auto-pull)' : '(manual)');
-    
+
     // Reset auto-pull flag for manual pulls
     if (!isAutoPull) {
         hasAutoPulledData = false;
@@ -5095,7 +5305,7 @@ function loadJobSettings(jobId) {
         document.getElementById('defaultExpenses').value = selectedJob.default_expenses || '';
         document.getElementById('defaultLocation').value = selectedJob.default_location || '';
         document.getElementById('locationNotes').value = selectedJob.location_notes || '';
-        
+
         // Apply job settings to all existing rows
         const rows = document.querySelectorAll('tr:has(input[name*="[amount]"])');
         rows.forEach((row, index) => {
@@ -5477,7 +5687,7 @@ document.addEventListener('click', function(e) {
         // Initialize horizontal scroll when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             initializeHorizontalScroll();
-            
+
             // Initialize Select2 for job dropdown
             $('#job_id').select2({
                 placeholder: 'Select Job',
@@ -5539,7 +5749,7 @@ document.addEventListener('click', function(e) {
         <div class="modal-body">
             <div style="margin-bottom: 1.5rem;">
                 <p style="color: #6b7280; margin-bottom: 1rem;">Please select the appropriate status for this salary sheet before saving.</p>
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                     <!-- Job Status -->
                     <div>
@@ -5552,7 +5762,7 @@ document.addEventListener('click', function(e) {
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
-                    
+
                     <!-- Salary Sheet Status -->
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Salary Sheet Status</label>
@@ -5566,7 +5776,7 @@ document.addEventListener('click', function(e) {
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Status Description -->
                 <div id="statusDescription" style="margin-top: 1rem; padding: 1rem; background: #f8fafc; border-radius: 0.5rem; border-left: 4px solid #3b82f6;">
                     <h4 style="margin: 0 0 0.5rem 0; color: #374151; font-size: 0.9rem; font-weight: 600;">Status Information</h4>
@@ -5574,7 +5784,7 @@ document.addEventListener('click', function(e) {
                         Please select a salary sheet status to view detailed information about the status change process.
                     </p>
                 </div>
-                
+
                 <!-- Additional Notes -->
                 <div style="margin-top: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Additional Notes (Optional)</label>
@@ -5595,7 +5805,7 @@ document.addEventListener('click', function(e) {
 function openSalarySheetSaveModal() {
     document.getElementById('salarySheetSaveModal').style.display = 'block';
     document.body.style.overflow = 'hidden';
-    
+
     // Reset form
     document.getElementById('jobStatusSelect').value = '';
     document.getElementById('salarySheetStatusSelect').value = '';
@@ -5612,9 +5822,9 @@ function updateStatusDescription() {
     const statusSelect = document.getElementById('salarySheetStatusSelect');
     const descriptionText = document.getElementById('statusDescriptionText');
     const statusDescription = document.getElementById('statusDescription');
-    
+
     const status = statusSelect.value;
-    
+
     switch(status) {
         case 'complete':
             descriptionText.innerHTML = `
@@ -5626,7 +5836,7 @@ function updateStatusDescription() {
             `;
             statusDescription.style.borderLeftColor = '#10b981';
             break;
-            
+
         case 'draft':
             descriptionText.innerHTML = `
                 <strong>Draft Status:</strong><br>
@@ -5637,7 +5847,7 @@ function updateStatusDescription() {
             `;
             statusDescription.style.borderLeftColor = '#f59e0b';
             break;
-            
+
         case 'reject':
             descriptionText.innerHTML = `
                 <strong>Reject Status:</strong><br>
@@ -5648,7 +5858,7 @@ function updateStatusDescription() {
             `;
             statusDescription.style.borderLeftColor = '#ef4444';
             break;
-            
+
         case 'approve':
             descriptionText.innerHTML = `
                 <strong>Approve Status:</strong><br>
@@ -5659,7 +5869,7 @@ function updateStatusDescription() {
             `;
             statusDescription.style.borderLeftColor = '#10b981';
             break;
-            
+
         case 'paid':
             descriptionText.innerHTML = `
                 <strong>Paid Status:</strong><br>
@@ -5670,7 +5880,7 @@ function updateStatusDescription() {
             `;
             statusDescription.style.borderLeftColor = '#10b981';
             break;
-            
+
         default:
             descriptionText.innerHTML = 'Please select a salary sheet status to view detailed information about the status change process.';
             statusDescription.style.borderLeftColor = '#3b82f6';
@@ -5681,7 +5891,7 @@ function confirmSaveSalarySheet() {
     const jobStatus = document.getElementById('jobStatusSelect').value;
     const salarySheetStatus = document.getElementById('salarySheetStatusSelect').value;
     const notes = document.getElementById('saveNotes').value;
-    
+
     // Validation
     if (!jobStatus) {
         Swal.fire({
@@ -5692,7 +5902,7 @@ function confirmSaveSalarySheet() {
         });
         return;
     }
-    
+
     if (!salarySheetStatus) {
         Swal.fire({
             icon: 'warning',
@@ -5702,39 +5912,39 @@ function confirmSaveSalarySheet() {
         });
         return;
     }
-    
+
     // Add hidden inputs to the form
     const form = document.getElementById('salarySheetForm');
-    
+
     // Update the existing status dropdown value instead of creating a hidden input
     const statusSelect = form.querySelector('select[name="status"]');
     if (statusSelect) {
         statusSelect.value = salarySheetStatus;
     }
-    
+
     // Remove existing hidden inputs if they exist
     const existingJobStatus = form.querySelector('input[name="job_status"]');
     const existingNotes = form.querySelector('input[name="notes"]');
-    
+
     if (existingJobStatus) existingJobStatus.remove();
     if (existingNotes) existingNotes.remove();
-    
+
     // Add new hidden inputs
     const jobStatusInput = document.createElement('input');
     jobStatusInput.type = 'hidden';
     jobStatusInput.name = 'job_status';
     jobStatusInput.value = jobStatus;
     form.appendChild(jobStatusInput);
-    
+
     const notesInput = document.createElement('input');
     notesInput.type = 'hidden';
     notesInput.name = 'notes';  // Changed from 'save_notes' to 'notes' to match controller
     notesInput.value = notes;
     form.appendChild(notesInput);
-    
+
     // Close modal
     closeSalarySheetSaveModal();
-    
+
     // Show confirmation
     Swal.fire({
         icon: 'info',
@@ -5743,7 +5953,7 @@ function confirmSaveSalarySheet() {
         showConfirmButton: false,
         timer: 1500
     });
-    
+
     // Debug: Log all form data before submission
     console.log('=== FORM SUBMISSION DEBUG ===');
     const formData = new FormData(form);
@@ -5756,7 +5966,7 @@ function confirmSaveSalarySheet() {
     }
     console.log('Custom amounts being submitted:', debugData);
     console.log('=== END FORM SUBMISSION DEBUG ===');
-    
+
     // Submit the form
     setTimeout(() => {
         form.submit();
@@ -5767,14 +5977,14 @@ function confirmSaveSalarySheet() {
 document.addEventListener('DOMContentLoaded', function() {
     // Close modal when clicking the close button
     document.getElementById('salarySheetSaveCloseBtn').addEventListener('click', closeSalarySheetSaveModal);
-    
+
     // Close modal when clicking outside
     document.getElementById('salarySheetSaveModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeSalarySheetSaveModal();
         }
     });
-    
+
     // Close modal on ESC key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -5795,7 +6005,7 @@ function openAddCustomDateModal() {
     const modal = document.getElementById('addCustomDateModal');
     const jobSelect = document.getElementById('job_id');
     const selectedOption = jobSelect.options[jobSelect.selectedIndex];
-    
+
     if (!selectedOption.value) {
         Swal.fire({
             icon: 'warning',
@@ -5804,7 +6014,20 @@ function openAddCustomDateModal() {
         });
         return;
     }
-    
+
+    // Check if end date exists - custom dates can only be added when end date is null
+    const endDate = selectedOption.getAttribute('data-end-date');
+    const hasEndDate = endDate && endDate !== 'null' && endDate !== '';
+
+    if (hasEndDate) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Custom Dates Not Allowed',
+            text: 'Custom dates can only be added when the job has no ending date.',
+        });
+        return;
+    }
+
     if (modal) {
         modal.style.display = 'block';
         document.getElementById('customDateInput').value = '';
@@ -5827,34 +6050,34 @@ function addCustomDateToAttendance() {
     const dateInput = document.getElementById('customDateInput');
     const errorDiv = document.getElementById('customDateError');
     const selectedDate = dateInput.value;
-    
+
     // Validate date
     if (!selectedDate) {
         errorDiv.textContent = 'Please select a date.';
         errorDiv.style.display = 'block';
         return;
     }
-    
+
     // Check if date already exists
     if (currentAttendanceDates.includes(selectedDate)) {
         errorDiv.textContent = 'This date is already in the attendance table.';
         errorDiv.style.display = 'block';
         return;
     }
-    
+
     // Add date to currentAttendanceDates array (sorted)
     currentAttendanceDates.push(selectedDate);
     currentAttendanceDates.sort(); // Sort dates chronologically
-    
+
     // Update headers
     updateAttendanceHeaders(currentAttendanceDates);
-    
+
     // Add date column to all existing rows
     addDateColumnToAllRows(selectedDate);
-    
+
     // Close modal
     closeAddCustomDateModal();
-    
+
     // Show success message
     Swal.fire({
         icon: 'success',
@@ -5868,22 +6091,22 @@ function addCustomDateToAttendance() {
 function addDateColumnToAllRows(newDate) {
     const rows = document.querySelectorAll('#promoterRows tr');
     const dateIndex = currentAttendanceDates.indexOf(newDate);
-    
+
     rows.forEach(row => {
         const attendanceCell = row.querySelector('td:nth-child(4)');
         if (attendanceCell) {
             const gridContainer = attendanceCell.querySelector('div');
             if (gridContainer) {
                 const rowNum = getRowNumberFromElement(row);
-                
+
                 // Get existing inputs
                 const existingInputs = Array.from(gridContainer.querySelectorAll('input[name*="[attendance]"]'));
                 const totalInput = gridContainer.querySelector('input[name*="[attendance_total]"]');
                 const amountInput = gridContainer.querySelector('input[name*="[attendance_amount]"]');
-                
+
                 // Clear container
                 gridContainer.innerHTML = '';
-                
+
                 // Recreate all inputs in correct order
                 currentAttendanceDates.forEach(date => {
                     const input = document.createElement('input');
@@ -5897,7 +6120,7 @@ function addDateColumnToAllRows(newDate) {
                     input.onchange = () => {
                         calculateRowTotal(rowNum);
                     };
-                    
+
                     // Preserve existing value if it exists
                     const existingInput = existingInputs.find(inp => {
                         const match = inp.name.match(/\[attendance\]\[([^\]]+)\]/);
@@ -5906,10 +6129,10 @@ function addDateColumnToAllRows(newDate) {
                     if (existingInput) {
                         input.value = existingInput.value;
                     }
-                    
+
                     gridContainer.appendChild(input);
                 });
-                
+
                 // Re-add Total input
                 if (totalInput) {
                     const newTotalInput = document.createElement('input');
@@ -5927,7 +6150,7 @@ function addDateColumnToAllRows(newDate) {
                     totalInputNew.readOnly = true;
                     gridContainer.appendChild(totalInputNew);
                 }
-                
+
                 // Re-add Amount input
                 if (amountInput) {
                     const newAmountInput = document.createElement('input');
@@ -5938,7 +6161,7 @@ function addDateColumnToAllRows(newDate) {
                     newAmountInput.title = 'Attendance Amount (Auto-calculated, but editable)';
                     newAmountInput.value = amountInput.value || '';
                     newAmountInput.setAttribute('oninput', `calculateNetAmount(${rowNum})`);
-                    
+
                     // Preserve custom amount attributes
                     if (amountInput.hasAttribute('data-custom-amount')) {
                         newAmountInput.setAttribute('data-custom-amount', amountInput.getAttribute('data-custom-amount'));
@@ -5952,7 +6175,7 @@ function addDateColumnToAllRows(newDate) {
                     if (amountInput.hasAttribute('data-last-synced-amount')) {
                         newAmountInput.setAttribute('data-last-synced-amount', amountInput.getAttribute('data-last-synced-amount'));
                     }
-                    
+
                     gridContainer.appendChild(newAmountInput);
                 } else {
                     const amountInputNew = document.createElement('input');
@@ -5964,17 +6187,17 @@ function addDateColumnToAllRows(newDate) {
                     amountInputNew.setAttribute('oninput', `calculateNetAmount(${rowNum})`);
                     gridContainer.appendChild(amountInputNew);
                 }
-                
+
                 // Update grid template and width
                 const baseWidth = 160;
                 const dateWidth = 80;
                 const numDates = currentAttendanceDates.length || 6;
                 const totalWidth = (numDates * dateWidth) + baseWidth;
-                
+
                 gridContainer.style.gridTemplateColumns = `repeat(${numDates}, 1fr) 1fr 1.5fr`;
                 gridContainer.style.width = `${totalWidth}px`;
                 attendanceCell.style.width = `${totalWidth}px`;
-                
+
                 // Recalculate row total
                 calculateRowTotal(rowNum);
             }
@@ -5988,19 +6211,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeAddCustomDateModalBtn = document.getElementById('closeAddCustomDateModal');
     const cancelAddCustomDateBtn = document.getElementById('cancelAddCustomDateBtn');
     const addCustomDateBtnModal = document.getElementById('addCustomDateBtnModal');
-    
+
     if (closeAddCustomDateModalBtn) {
         closeAddCustomDateModalBtn.addEventListener('click', closeAddCustomDateModal);
     }
-    
+
     if (cancelAddCustomDateBtn) {
         cancelAddCustomDateBtn.addEventListener('click', closeAddCustomDateModal);
     }
-    
+
     if (addCustomDateBtnModal) {
         addCustomDateBtnModal.addEventListener('click', addCustomDateToAttendance);
     }
-    
+
     if (addCustomDateModal) {
         addCustomDateModal.addEventListener('click', function(e) {
             if (e.target === addCustomDateModal) {
@@ -6008,7 +6231,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Allow Enter key to submit
     const customDateInput = document.getElementById('customDateInput');
     if (customDateInput) {
