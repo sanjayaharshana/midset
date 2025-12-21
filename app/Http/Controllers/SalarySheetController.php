@@ -985,6 +985,18 @@ class SalarySheetController extends Controller
             $sheet->setCellValue('B' . $row, $salarySheet->location);
         }
 
+        // Load promoters data for bank details
+        $promoterIds = [];
+        if ($salarySheet->items->count() > 0) {
+            foreach ($salarySheet->items as $item) {
+                if (isset($item->attendance_data['promoter_id']) && !empty($item->attendance_data['promoter_id'])) {
+                    $promoterIds[] = $item->attendance_data['promoter_id'];
+                }
+            }
+        }
+        $promoterIds = array_unique($promoterIds);
+        $promoters = !empty($promoterIds) ? Promoter::whereIn('id', $promoterIds)->get()->keyBy('id') : collect();
+
         // Collect all attendance dates
         $allAttendanceDates = [];
         $dynamicAllowances = [];
@@ -1011,7 +1023,7 @@ class SalarySheetController extends Controller
         $col = 'A';
 
         // Header row 1
-        $headers = ['Item #', 'Location', 'Position', 'Promoter'];
+        $headers = ['Item #', 'Location', 'Position', 'Promoter', 'Bank Name', 'Bank Branch', 'Bank Account Number'];
 
         // Add attendance date columns
         foreach ($allAttendanceDates as $date) {
@@ -1051,8 +1063,8 @@ class SalarySheetController extends Controller
             $colIndex++;
         }
 
-        // Calculate total columns
-        $totalColumns = 4 + count($allAttendanceDates) + 3 + count($dynamicAllowances) + 4; // Item, Location, Position, Promoter + Attendance dates + Total Days, Att Amount, Base Amount + Allowances + Expenses, Hold, Net, Coordinator, Coord Fee
+        // Calculate total columns (Item, Location, Position, Promoter, Bank Name, Bank Branch, Bank Account + Attendance dates + Total Days, Att Amount, Base Amount + Allowances + Expenses, Hold, Net, Coordinator, Coord Fee)
+        $totalColumns = 7 + count($allAttendanceDates) + 3 + count($dynamicAllowances) + 4;
         $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalColumns);
 
         // Data rows
@@ -1072,6 +1084,19 @@ class SalarySheetController extends Controller
 
             $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
             $sheet->setCellValue($colLetter . $row, $item->attendance_data['promoter_name'] ?? 'N/A');
+
+            // Bank details - get from promoter data
+            $promoterId = isset($item->attendance_data['promoter_id']) ? $item->attendance_data['promoter_id'] : null;
+            $promoter = $promoterId && isset($promoters[$promoterId]) ? $promoters[$promoterId] : null;
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $promoter ? ($promoter->bank_name ?? 'N/A') : 'N/A');
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $promoter ? ($promoter->bank_branch_name ?? 'N/A') : 'N/A');
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $promoter ? ($promoter->bank_account_number ?? 'N/A') : 'N/A');
 
             // Attendance dates
             foreach ($allAttendanceDates as $date) {
@@ -1137,6 +1162,9 @@ class SalarySheetController extends Controller
         $sheet->getColumnDimension('B')->setWidth(15); // Location
         $sheet->getColumnDimension('C')->setWidth(20); // Position
         $sheet->getColumnDimension('D')->setWidth(25); // Promoter
+        $sheet->getColumnDimension('E')->setWidth(20); // Bank Name
+        $sheet->getColumnDimension('F')->setWidth(20); // Bank Branch
+        $sheet->getColumnDimension('G')->setWidth(20); // Bank Account Number
 
         // Notes section
         if ($salarySheet->notes) {
