@@ -78,7 +78,7 @@
                                 @php
                                     $statusDisplay = ucfirst($sheet->status);
                                     $statusClass = $sheet->status;
-                                    
+
                                     // For reporter role, show "Pending Approval" for "complete" status
                                     if (auth()->check() && auth()->user()->hasRole('reporter') && $sheet->status === 'complete') {
                                         $statusDisplay = 'Pending Approval';
@@ -108,7 +108,14 @@
                                         </button>
                                     @endif
                                     @can('view salary sheets')
-                                        <a href="{{ route('admin.salary-sheets.print', $sheet) }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <a href="{{ route('admin.salary-sheets.export', $sheet) }}" class="btn btn-sm btn-success" title="Export to Excel">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                            </svg>
+                                        </a>
+                                        <a href="{{ route('admin.salary-sheets.print', $sheet) }}" target="_blank" class="btn btn-sm btn-primary" title="Print">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="6,9 6,2 18,2 18,9"></polyline>
                                                 <path d="M6,18H4a2,2 0 0,1 -2,-2V11a2,2 0 0,1 2,-2H20a2,2 0 0,1 2,2v5a2,2 0 0,1 -2,2H18"></path>
@@ -144,7 +151,7 @@
                     </tbody>
                 </table>
             </div>
-            
+
             <div class="pagination-container">
                 {{ $salarySheets->links() }}
             </div>
@@ -441,7 +448,7 @@ function confirmApproval() {
     confirmBtn.textContent = 'Approving...';
 
     // Get CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
                      document.querySelector('input[name="_token"]')?.value;
 
     // Send approval request
@@ -499,11 +506,11 @@ function confirmApproval() {
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('approvalModal');
     const closeBtn = document.getElementById('approvalModalClose');
-    
+
     if (closeBtn) {
         closeBtn.addEventListener('click', closeApprovalModal);
     }
-    
+
     if (modal) {
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {
@@ -511,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Close on ESC key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && modal && modal.style.display === 'block') {

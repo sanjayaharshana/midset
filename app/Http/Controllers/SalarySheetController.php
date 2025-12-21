@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SalarySheetCompleteNotification;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SalarySheetController extends Controller
 {
@@ -913,5 +919,250 @@ class SalarySheetController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
         }
+    }
+
+    /**
+     * Export salary sheet to Excel
+     */
+    public function export(SalarySheet $salarySheet)
+    {
+        // Access control: officers can only export salary sheets for their assigned jobs
+        $user = auth()->user();
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('officer')) {
+            $salarySheet->loadMissing('job');
+            if (!$salarySheet->job || (int) $salarySheet->job->officer_id !== (int) $user->id) {
+                abort(403);
+            }
+        }
+
+        $salarySheet->load(['job.client', 'items.position']);
+
+        // Create new Spreadsheet object
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set document properties
+        $spreadsheet->getProperties()
+            ->setCreator('Salary Management System')
+            ->setTitle('Salary Sheet - ' . $salarySheet->sheet_no)
+            ->setSubject('Salary Sheet Export')
+            ->setDescription('Exported salary sheet data');
+
+        // Header Information
+        $row = 1;
+        $sheet->setCellValue('A' . $row, 'SALARY SHEET');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(16);
+        $sheet->mergeCells('A1:D1');
+
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Sheet Number:');
+        $sheet->setCellValue('B' . $row, $salarySheet->sheet_no);
+        $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
+
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Status:');
+        $sheet->setCellValue('B' . $row, ucfirst($salarySheet->status));
+
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Date:');
+        $sheet->setCellValue('B' . $row, $salarySheet->created_at->format('Y-m-d'));
+
+        if ($salarySheet->job) {
+            $row++;
+            $sheet->setCellValue('A' . $row, 'Job Number:');
+            $sheet->setCellValue('B' . $row, $salarySheet->job->job_number ?? 'N/A');
+
+            if ($salarySheet->job->client) {
+                $row++;
+                $sheet->setCellValue('A' . $row, 'Client:');
+                $sheet->setCellValue('B' . $row, $salarySheet->job->client->client_name ?? 'N/A');
+            }
+        }
+
+        if ($salarySheet->location) {
+            $row++;
+            $sheet->setCellValue('A' . $row, 'Location:');
+            $sheet->setCellValue('B' . $row, $salarySheet->location);
+        }
+
+        // Collect all attendance dates
+        $allAttendanceDates = [];
+        $dynamicAllowances = [];
+
+        if ($salarySheet->items->count() > 0) {
+            foreach ($salarySheet->items as $item) {
+                if (isset($item->attendance_data['attendance']) && is_array($item->attendance_data['attendance'])) {
+                    $dates = array_keys($item->attendance_data['attendance']);
+                    $allAttendanceDates = array_merge($allAttendanceDates, $dates);
+                }
+            }
+            $allAttendanceDates = array_unique($allAttendanceDates);
+            sort($allAttendanceDates);
+
+            // Extract dynamic allowances from job
+            if ($salarySheet->job && isset($salarySheet->job->allowance) && is_array($salarySheet->job->allowance)) {
+                $dynamicAllowances = $salarySheet->job->allowance;
+            }
+        }
+
+        // Table Headers
+        $row += 2;
+        $startRow = $row;
+        $col = 'A';
+
+        // Header row 1
+        $headers = ['Item #', 'Location', 'Position', 'Promoter'];
+
+        // Add attendance date columns
+        foreach ($allAttendanceDates as $date) {
+            $headers[] = \Carbon\Carbon::parse($date)->format('M d');
+        }
+
+        $headers[] = 'Total Days';
+        $headers[] = 'Attendance Amount';
+        $headers[] = 'Base Amount';
+
+        // Add dynamic allowance columns
+        foreach ($dynamicAllowances as $allowance) {
+            $headers[] = $allowance['allowance_name'] ?? 'Allowance';
+        }
+
+        $headers[] = 'Expenses';
+        $headers[] = 'Hold for Weeks';
+        $headers[] = 'Net Amount';
+        $headers[] = 'Coordinator';
+        $headers[] = 'Coordination Fee';
+
+        // Write headers
+        $colIndex = 1;
+        foreach ($headers as $header) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+            $sheet->setCellValue($colLetter . $row, $header);
+            $sheet->getStyle($colLetter . $row)->getFont()->setBold(true);
+            $sheet->getStyle($colLetter . $row)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setRGB('4472C4');
+            $sheet->getStyle($colLetter . $row)->getFont()->getColor()->setRGB('FFFFFF');
+            $sheet->getStyle($colLetter . $row)->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getStyle($colLetter . $row)->getBorders()->getAllBorders()
+                ->setBorderStyle(Border::BORDER_THIN);
+            $colIndex++;
+        }
+
+        // Calculate total columns
+        $totalColumns = 4 + count($allAttendanceDates) + 3 + count($dynamicAllowances) + 4; // Item, Location, Position, Promoter + Attendance dates + Total Days, Att Amount, Base Amount + Allowances + Expenses, Hold, Net, Coordinator, Coord Fee
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalColumns);
+
+        // Data rows
+        $row++;
+        $itemNumber = 1;
+        foreach ($salarySheet->items as $item) {
+            $colIndex = 1;
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $item->no);
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $item->location ?? 'N/A');
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $item->position->position_name ?? 'N/A');
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $item->attendance_data['promoter_name'] ?? 'N/A');
+
+            // Attendance dates
+            foreach ($allAttendanceDates as $date) {
+                $attendanceValue = isset($item->attendance_data['attendance'][$date]) ? $item->attendance_data['attendance'][$date] : 0;
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+                $sheet->setCellValue($colLetter . $row, $attendanceValue > 0 ? 'P' : 'A');
+            }
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $item->attendance_data['total'] ?? 0);
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, number_format($item->attendance_data['amount'] ?? 0, 2));
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, number_format($item->payment_data['amount'] ?? 0, 2));
+
+            // Dynamic allowances
+            foreach ($dynamicAllowances as $allowance) {
+                $allowanceName = $allowance['allowance_name'] ?? '';
+                $allowanceValue = 0;
+                if (isset($item->allowances_data) && is_array($item->allowances_data) && isset($item->allowances_data[$allowanceName])) {
+                    $allowanceValue = $item->allowances_data[$allowanceName];
+                }
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+                $sheet->setCellValue($colLetter . $row, number_format($allowanceValue, 2));
+            }
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, number_format($item->payment_data['expenses'] ?? 0, 2));
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, number_format($item->payment_data['hold_for_weeks'] ?? 0, 2));
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, number_format($item->payment_data['net_amount'] ?? 0, 2));
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, $item->coordinator_details['current_coordinator'] ?? 'N/A');
+
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex++);
+            $sheet->setCellValue($colLetter . $row, number_format($item->coordinator_details['amount'] ?? 0, 2));
+
+            // Apply borders to data row
+            for ($c = 1; $c <= $totalColumns; $c++) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
+                $sheet->getStyle($colLetter . $row)->getBorders()->getAllBorders()
+                    ->setBorderStyle(Border::BORDER_THIN);
+            }
+
+            $row++;
+            $itemNumber++;
+        }
+
+        // Auto-size columns
+        for ($c = 1; $c <= $totalColumns; $c++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        // Set column widths for better readability (override auto-size for key columns)
+        $sheet->getColumnDimension('A')->setWidth(10); // Item #
+        $sheet->getColumnDimension('B')->setWidth(15); // Location
+        $sheet->getColumnDimension('C')->setWidth(20); // Position
+        $sheet->getColumnDimension('D')->setWidth(25); // Promoter
+
+        // Notes section
+        if ($salarySheet->notes) {
+            $row += 2;
+            $sheet->setCellValue('A' . $row, 'Notes:');
+            $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+            $row++;
+            $sheet->setCellValue('A' . $row, $salarySheet->notes);
+            $sheet->mergeCells('A' . $row . ':D' . $row);
+            $sheet->getStyle('A' . $row)->getAlignment()->setWrapText(true);
+        }
+
+        // Create writer and download
+        $filename = 'salary_sheet_' . $salarySheet->sheet_no . '_' . date('Y-m-d') . '.xlsx';
+
+        return new StreamedResponse(
+            function () use ($spreadsheet) {
+                $writer = new Xlsx($spreadsheet);
+                $writer->save('php://output');
+            },
+            200,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'max-age=0',
+            ]
+        );
     }
 }

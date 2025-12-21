@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     // Custom routes must be defined before resource route to avoid conflicts
     Route::get('admin/salary-sheets/by-job/{jobId}', [SalarySheetController::class, 'getByJob'])->name('admin.salary-sheets.by-job');
     Route::get('admin/salary-sheets/{salarySheet}/print', [SalarySheetController::class, 'print'])->name('admin.salary-sheets.print');
+    Route::get('admin/salary-sheets/{salarySheet}/export', [SalarySheetController::class, 'export'])->name('admin.salary-sheets.export');
     Route::post('admin/salary-sheets/{salarySheet}/approve', [SalarySheetController::class, 'approve'])->name('admin.salary-sheets.approve');
     Route::resource('admin/salary-sheets', SalarySheetController::class)->names('admin.salary-sheets');
 
@@ -107,7 +108,7 @@ Route::middleware('auth')->group(function () {
     Route::put('admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
     Route::get('admin/settings/group/{group}', [SettingsController::class, 'getByGroup'])->name('admin.settings.group');
     Route::get('admin/settings/get/{key}', [SettingsController::class, 'get'])->name('admin.settings.get');
-    
+
     // Dynamic Settings API routes
     Route::post('admin/settings/create', [SettingsController::class, 'create'])->name('admin.settings.create');
     Route::delete('admin/settings/{key}', [SettingsController::class, 'destroy'])->name('admin.settings.destroy');
@@ -116,7 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::post('admin/settings/import', [SettingsController::class, 'import'])->name('admin.settings.import');
 
     Route::post('admin/salary-sheet-enforce',[SalarySheetController::class,'enforce'])->name('admin.salary.enforce');
-    
+
     // API endpoint to generate JSON data for salary sheet
     Route::get('admin/salary-sheets/{id}/json', [SalarySheetController::class, 'generateJsonData'])->name('admin.salary-sheets.json');
 

@@ -16,6 +16,14 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3>Salary Sheet Information</h3>
             <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ route('admin.salary-sheets.export', $salarySheet) }}" class="btn btn-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export to Excel
+                </a>
                 @can('edit salary sheets')
                     @if($salarySheet->job && $salarySheet->job->status !== 'completed' && !in_array($salarySheet->status, ['complete', 'approve', 'paid']))
                         <a href="{{ route('admin.salary-sheets.edit', $salarySheet) }}" class="btn btn-warning">
@@ -60,7 +68,7 @@
                     @php
                         $statusDisplay = $salarySheet->status_display;
                         $statusClass = $salarySheet->status;
-                        
+
                         // For reporter role, show "Pending Approval" for "complete" status
                         if (auth()->check() && auth()->user()->hasRole('reporter') && $salarySheet->status === 'complete') {
                             $statusDisplay = 'Pending Approval';
@@ -79,7 +87,7 @@
 
         <!-- Main Content Grid -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-            
+
             <!-- Left Column: Basic Information -->
             <div>
                 <!-- Job Information -->
@@ -93,7 +101,7 @@
                         </svg>
                         Job Information
                     </h4>
-                    
+
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Job Number</label>
@@ -124,7 +132,7 @@
                         </svg>
                         Summary Information
                     </h4>
-                    
+
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Total Items</label>
@@ -157,7 +165,7 @@
                         </svg>
                         Financial Summary
                     </h4>
-                    
+
                     <div class="totals-grid">
                         <div class="total-item">
                             <label>Total Net Amount</label>
@@ -201,7 +209,7 @@
                 </svg>
                 Salary Sheet Items ({{ $salarySheet->items->count() }})
             </h3>
-            
+
             @foreach($salarySheet->items as $index => $item)
             <div class="item-card">
                 <div class="item-header">
@@ -215,10 +223,10 @@
                         @endif
                     </h4>
                 </div>
-                
+
                 <div class="item-content">
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
-                        
+
                         <!-- Attendance Data -->
                         <div class="item-section">
                             <h5>Attendance Data</h5>
@@ -234,7 +242,7 @@
                                 </div>
                             </div>
                             @endif
-                            
+
                             <div class="attendance-summary">
                                 <div class="summary-item">
                                     <label>Total Days</label>
@@ -688,15 +696,15 @@
     div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
     }
-    
+
     .dates-grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     }
-    
+
     .attendance-summary {
         grid-template-columns: 1fr;
     }
-    
+
     .item-content > div {
         grid-template-columns: 1fr !important;
     }

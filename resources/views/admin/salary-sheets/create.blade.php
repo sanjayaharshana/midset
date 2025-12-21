@@ -220,6 +220,7 @@
                                 <th style="width: 60px;">No</th>
                                 <th style="width: 150px;">Location</th>
                                 <th style="width: 400px;">Promoter Details</th>
+                                <th style="width: 350px;">Bank Details</th>
                                 <th style="width: 700px;">Attendance</th>
                                 <th style="width: 600px;">Payments</th>
                                 <th style="width: 400px;">Coordinator Details</th>
@@ -232,6 +233,13 @@
                                         <div style="text-align: center; font-size: 0.7rem;">Promoter ID</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Promoter Name</div>
                                         <div style="text-align: center; font-size: 0.7rem;">Position</div>
+                                    </div>
+                                </th>
+                                <th>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;width: 533px;">
+                                        <div style="text-align: center; font-size: 0.7rem;">Bank Name</div>
+                                        <div style="text-align: center; font-size: 0.7rem;">Bank Branch</div>
+                                        <div style="text-align: center; font-size: 0.7rem;">Bank Number</div>
                                     </div>
                                 </th>
                                 <th id="attendanceColumn" style="display: none;">
@@ -2172,6 +2180,13 @@ function addPromoterRow() {
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][position]" readonly>
             </div>
         </td>
+        <td>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][bank_name]" readonly placeholder="Bank Name">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][bank_branch]" readonly placeholder="Bank Branch">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${nextRowNumber}][bank_account_number]" readonly placeholder="Bank Number">
+            </div>
+        </td>
         <td id="attendanceCell-${nextRowNumber}" style="display: table-cell; width: ${attendanceWidth}px;">
             <div style="display: grid; grid-template-columns: repeat(${numDates}, 1fr) 1fr 1.5fr; gap: 0.75rem; width: ${attendanceWidth}px;">
                 ${attendanceInputs}
@@ -2462,7 +2477,7 @@ function searchPromoters(rowNum, q, limit = 10, inputEl = null) {
             }
 
             const html = items.map(p => `
-                <div class="promoter-suggestion-item" data-id="${p.id}" data-name="${p.promoter_name}" data-position="${p.position || ''}" data-position-id="${p.position_id || ''}" data-promoter-id="${p.promoter_id}" data-phone="${p.phone_no || ''}" data-id-card="${p.identity_card_no || ''}" data-bank="${p.bank_name || ''}" data-account="${p.bank_account_number || ''}" data-status="${p.status || ''}"
+                <div class="promoter-suggestion-item" data-id="${p.id}" data-name="${p.promoter_name}" data-position="${p.position || ''}" data-position-id="${p.position_id || ''}" data-promoter-id="${p.promoter_id}" data-phone="${p.phone_no || ''}" data-id-card="${p.identity_card_no || ''}" data-bank="${p.bank_name || ''}" data-branch="${p.bank_branch_name || ''}" data-account="${p.bank_account_number || ''}" data-status="${p.status || ''}"
                     style="padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
                     <div style="font-weight: 600;">${p.promoter_name} <span style="color:#999; font-weight:400;">(${p.promoter_id})</span></div>
                     <div style="font-size: 12px; color: #666;">${p.position || 'No Position'} · ${p.phone_no || ''}</div>
@@ -2693,6 +2708,7 @@ function selectPromoterSuggestion(rowNum, el) {
     option.dataset.phone = el.dataset.phone || '';
     option.dataset.idCard = el.dataset.idCard || '';
     option.dataset.bank = el.dataset.bank || '';
+    option.dataset.branch = el.dataset.branch || '';
     option.dataset.account = el.dataset.account || '';
     option.dataset.status = el.dataset.status || '';
     option.dataset.positionId = el.dataset.positionId || '';
@@ -2764,9 +2780,17 @@ async function updatePromoterDetails(rowNum, selectElement) {
     if (selectedOption && selectedOption.dataset.name) {
         const promoterNameInput = row.querySelector('input[name="rows[' + rowNum + '][promoter_name]"]');
         const positionInput = row.querySelector('input[name="rows[' + rowNum + '][position]"]');
+        const bankNameInput = row.querySelector('input[name="rows[' + rowNum + '][bank_name]"]');
+        const bankBranchInput = row.querySelector('input[name="rows[' + rowNum + '][bank_branch]"]');
+        const bankAccountInput = row.querySelector('input[name="rows[' + rowNum + '][bank_account_number]"]');
 
         promoterNameInput.value = selectedOption.dataset.name;
         positionInput.value = selectedOption.dataset.position;
+
+        // Populate bank details
+        if (bankNameInput) bankNameInput.value = selectedOption.dataset.bank || '';
+        if (bankBranchInput) bankBranchInput.value = selectedOption.dataset.branch || '';
+        if (bankAccountInput) bankAccountInput.value = selectedOption.dataset.account || '';
 
         // Update tooltip with promoter details from option data attributes
         updatePromoterTooltipFromOption(promoterNameInput, selectedOption);
@@ -2784,9 +2808,17 @@ async function updatePromoterDetails(rowNum, selectElement) {
     } else {
         const promoterNameInput = row.querySelector('input[name="rows[' + rowNum + '][promoter_name]"]');
         const positionInput = row.querySelector('input[name="rows[' + rowNum + '][position]"]');
+        const bankNameInput = row.querySelector('input[name="rows[' + rowNum + '][bank_name]"]');
+        const bankBranchInput = row.querySelector('input[name="rows[' + rowNum + '][bank_branch]"]');
+        const bankAccountInput = row.querySelector('input[name="rows[' + rowNum + '][bank_account_number]"]');
 
         promoterNameInput.value = '';
         positionInput.value = '';
+
+        // Clear bank details
+        if (bankNameInput) bankNameInput.value = '';
+        if (bankBranchInput) bankBranchInput.value = '';
+        if (bankAccountInput) bankAccountInput.value = '';
 
         // Clear tooltip
         promoterNameInput.setAttribute('data-tooltip', '');
@@ -3484,7 +3516,7 @@ function updateAttendanceHeaders(dates) {
 function updateExistingRows(dates) {
     const rows = document.querySelectorAll('#promoterRows tr');
     rows.forEach(row => {
-        const attendanceCell = row.querySelector('td:nth-child(4)');
+        const attendanceCell = row.querySelector('td:nth-child(5)');
         if (attendanceCell) {
             // Always show attendance cell (either with dates or fallback)
             attendanceCell.style.display = 'table-cell';
@@ -4026,7 +4058,7 @@ function loadExistingSalarySheets(jobId) {
 
     // Show loading state
     const tbody = document.getElementById('promoterRows');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #6b7280;"><div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>Loading salary sheets...</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #6b7280;"><div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>Loading salary sheets...</div></td></tr>';
 
     // Fetch existing salary sheets for this job
     fetch(`/admin/salary-sheets/by-job/${jobId}`, {
@@ -4162,6 +4194,9 @@ function loadSalarySheetAsRow(sheet, index) {
     const promoter = promoters.find(p => p.id == sheet.promoter_id);
     const promoterName = promoter ? promoter.promoter_name : 'Unknown';
     const positionName = promoter && promoter.position ? promoter.position.position_name : 'No Position';
+    const bankName = promoter ? (promoter.bank_name || '') : '';
+    const bankBranch = promoter ? (promoter.bank_branch_name || '') : '';
+    const bankAccount = promoter ? (promoter.bank_account_number || '') : '';
 
     // Get coordinator data
     const coordinator = coordinators.find(c => c.id == sheet.current_coordinator_id);
@@ -4209,6 +4244,7 @@ function loadSalarySheetAsRow(sheet, index) {
                                 data-phone="${promoter.phone_no || ''}"
                                 data-id-card="${promoter.identity_card_no || ''}"
                                 data-bank="${promoter.bank_name || ''}"
+                                data-branch="${promoter.bank_branch_name || ''}"
                                 data-account="${promoter.bank_account_number || ''}"
                                 data-status="${promoter.status || 'inactive'}"
                                 data-position-id="${promoter.position_id || ''}">${promoter.promoter_id}</option>` : ''}
@@ -4216,6 +4252,13 @@ function loadSalarySheetAsRow(sheet, index) {
                 </div>
                 <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${index}][promoter_name]" readonly value="${promoterName}" data-tooltip="">
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][position]" readonly value="${positionName}">
+            </div>
+        </td>
+        <td>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][bank_name]" readonly placeholder="Bank Name" value="${bankName}">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][bank_branch]" readonly placeholder="Bank Branch" value="${bankBranch}">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index}][bank_account_number]" readonly placeholder="Bank Number" value="${bankAccount}">
             </div>
         </td>
         <td id="attendanceCell-${index}" style="display: table-cell; width: ${attendanceWidth}px;">
@@ -4497,6 +4540,7 @@ function addPromoterRowFromJson(rowData, index) {
                                     data-phone="${promoter.phone_no || ''}"
                                     data-id-card="${promoter.identity_card_no || ''}"
                                     data-bank="${promoter.bank_name || ''}"
+                                    data-branch="${promoter.bank_branch_name || ''}"
                                     data-account="${promoter.bank_account_number || ''}"
                                     data-status="${promoter.status || 'inactive'}"
                                     data-position-id="${promoter.position_id || ''}"
@@ -4506,6 +4550,13 @@ function addPromoterRowFromJson(rowData, index) {
                 </div>
                 <input type="text" class="table-input-small table-input-readonly promoter-tooltip" name="rows[${index + 1}][promoter_name]" readonly data-tooltip="" value="${rowData.promoter_name || ''}">
                 <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][position]" readonly value="${rowData.position || ''}">
+            </div>
+        </td>
+        <td>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][bank_name]" readonly placeholder="Bank Name" value="${rowData.bank_name || ''}">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][bank_branch]" readonly placeholder="Bank Branch" value="${rowData.bank_branch || ''}">
+                <input type="text" class="table-input-small table-input-readonly" name="rows[${index + 1}][bank_account_number]" readonly placeholder="Bank Number" value="${rowData.bank_account_number || ''}">
             </div>
         </td>
         <td id="attendanceCell-${index + 1}" style="display: table-cell; width: ${attendanceWidth}px;">
@@ -6093,7 +6144,7 @@ function addDateColumnToAllRows(newDate) {
     const dateIndex = currentAttendanceDates.indexOf(newDate);
 
     rows.forEach(row => {
-        const attendanceCell = row.querySelector('td:nth-child(4)');
+        const attendanceCell = row.querySelector('td:nth-child(5)');
         if (attendanceCell) {
             const gridContainer = attendanceCell.querySelector('div');
             if (gridContainer) {
