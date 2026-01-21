@@ -36,6 +36,7 @@
                             <th>{{ __('common.count') }}</th>
                             <th>{{ __('salary_sheets.total_promoters') }}</th>
                             <th>{{ __('salary_sheets.status') }}</th>
+                            <th>Created By</th>
                             <th>{{ __('salary_sheets.created') }}</th>
                             <th>{{ __('common.actions') }}</th>
                         </tr>
@@ -88,6 +89,14 @@
                                 <span class="status-badge status-{{ $statusClass }}">
                                     {{ $statusDisplay }}
                                 </span>
+                            </td>
+                            <td>
+                                @if($sheet->creator)
+                                    <div style="font-weight: 500;">{{ $sheet->creator->name ?? 'N/A' }}</div>
+                                    <div style="color: #6b7280; font-size: 0.75rem;">{{ $sheet->creator->email ?? '' }}</div>
+                                @else
+                                    <span style="color: #9ca3af;">N/A</span>
+                                @endif
                             </td>
                             <td>{{ $sheet->created_at->format('M d, Y') }}</td>
                             <td>

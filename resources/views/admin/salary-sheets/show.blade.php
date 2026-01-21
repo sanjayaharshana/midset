@@ -150,6 +150,16 @@
                             <label>Positions</label>
                             <div>{{ $salarySheet->positions->count() }}</div>
                         </div>
+                        @if($salarySheet->creator)
+                        <div class="info-item">
+                            <label>Created By</label>
+                            <div>{{ $salarySheet->creator->name ?? $salarySheet->creator->email ?? 'N/A' }}</div>
+                        </div>
+                        @endif
+                        <div class="info-item">
+                            <label>Created At</label>
+                            <div>{{ $salarySheet->created_at->format('Y-m-d H:i:s') }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -215,6 +225,9 @@
                 <div class="item-header">
                     <h4>
                         Item #{{ $item->no }}
+                        @if($item->promoter)
+                            <span class="promoter-badge">{{ $item->promoter->promoter_name ?? 'N/A' }}</span>
+                        @endif
                         @if($item->position)
                             <span class="position-badge">{{ $item->position->position_name }}</span>
                         @endif
@@ -225,6 +238,24 @@
                 </div>
 
                 <div class="item-content">
+                    <!-- Promoter and Position Information -->
+                    <div class="promoter-info-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="info-item">
+                                <label>Promoter Name</label>
+                                <div style="font-weight: 600; color: #374151;">
+                                    {{ $item->promoter->promoter_name ?? ($item->attendance_data['promoter_name'] ?? 'N/A') }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <label>Position</label>
+                                <div style="font-weight: 600; color: #374151;">
+                                    {{ $item->position->position_name ?? ($item->attendance_data['position'] ?? 'N/A') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
 
                         <!-- Attendance Data -->
@@ -481,6 +512,16 @@
 .location-badge {
     background: #dcfce7;
     color: #166534;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.promoter-badge {
+    background: #fef3c7;
+    color: #92400e;
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
     font-size: 0.75rem;

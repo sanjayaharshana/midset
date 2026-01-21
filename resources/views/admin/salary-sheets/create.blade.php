@@ -398,10 +398,10 @@
             <h3>Allowance Rules</h3>
             <span class="close" id="allowanceRuleCloseBtn">&times;</span>
         </div>
-        <div class="modal-body">
-            <div style="margin-bottom: 1rem;">
-                <button type="button" id="addAllowanceRowBtn" class="btn btn-success">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+        <div class="modal-body" style="padding: 1rem;">
+            <div style="margin-bottom: 0.75rem;">
+                <button type="button" id="addAllowanceRowBtn" class="btn btn-success" style="padding: 0.375rem 0.75rem; font-size: 0.8125rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
@@ -413,9 +413,9 @@
                 <!-- Dynamic allowance rows will be added here -->
             </div>
 
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
-                <button type="button" class="btn btn-secondary" onclick="closeAllowanceRuleModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveAllowanceRules()">Save Allowance Rules</button>
+            <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeAllowanceRuleModal()" style="padding: 0.375rem 0.75rem; font-size: 0.8125rem;">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAllowanceRules()" style="padding: 0.375rem 0.75rem; font-size: 0.8125rem;">Save Allowance Rules</button>
             </div>
         </div>
     </div>
@@ -1857,10 +1857,17 @@ function generatePaymentRowHTML(rowNumber, jobAllowances = [], defaultValues = {
     // Add allowance input fields
     jobAllowances.forEach((allowance, index) => {
         const defaultValue = defaultValues[allowance.allowance_name] || allowance.price || 0;
+        const multiplyByAttendance = allowance.multiply_by_attendance === true || allowance.multiply_by_attendance === 1 || allowance.multiply_by_attendance === '1';
+        const hasDefaultValue = defaultValues[allowance.allowance_name] !== undefined && defaultValues[allowance.allowance_name] !== null;
         rowHTML += `
             <input type="number" step="0.01" class="table-input-small" name="rows[${rowNumber}][allowances][${allowance.allowance_name}]"
-                   value="${defaultValue}" placeholder="0.00" onchange="calculateRowNet(${rowNumber})"
-                   title="${allowance.allowance_name}">
+                   value="${defaultValue}" placeholder="0.00"
+                   onchange="markAllowanceAsCustom(this, '${allowance.allowance_name}'); calculateRowNet(${rowNumber})"
+                   data-allowance-name="${allowance.allowance_name}"
+                   data-multiply-by-attendance="${multiplyByAttendance ? 'true' : 'false'}"
+                   data-allowance-price="${allowance.price || 0}"
+                   ${hasDefaultValue ? 'data-loaded-from-db="true"' : ''}
+                   title="${allowance.allowance_name}${multiplyByAttendance ? ' (Auto: Attendance × Price)' : ''}">
         `;
     });
 
@@ -1959,31 +1966,54 @@ function addAllowanceRow() {
     row.style.cssText = `
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 1rem;
+        gap: 0.5rem;
+        padding: 0.5rem;
         border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
         background: #f9fafb;
     `;
 
     row.innerHTML = `
         <div style="flex: 1;">
-            <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #374151;">Allowance Name</label>
-            <select class="form-control" name="allowance_rules[${allowanceRuleCounter}][allowance_name]" required>
+            <label style="display: block; margin-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #374151;">Allowance Type</label>
+            <select class="form-control" id="allowanceType-${allowanceRuleCounter}" name="allowance_rules[${allowanceRuleCounter}][allowance_type]" onchange="handleAllowanceTypeChange(${allowanceRuleCounter})" required style="padding: 0.375rem; font-size: 0.8125rem;">
+                <option value="select">Select from List</option>
+                <option value="manual">Manual Type</option>
+            </select>
+        </div>
+        <div style="flex: 1;" id="allowanceSelectContainer-${allowanceRuleCounter}">
+            <label style="display: block; margin-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #374151;">Allowance Name</label>
+            <select class="form-control" id="allowanceSelect-${allowanceRuleCounter}" name="allowance_rules[${allowanceRuleCounter}][allowance_name]" required style="padding: 0.375rem; font-size: 0.8125rem;">
                 <option value="">Select Allowance</option>
                 ${allowances.map(allowance =>
                     `<option value="${allowance.name}">${allowance.name}</option>`
                 ).join('')}
             </select>
         </div>
+        <div style="flex: 1; display: none;" id="allowanceManualContainer-${allowanceRuleCounter}">
+            <label style="display: block; margin-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #374151;">Manual Allowance Name</label>
+            <input type="text" class="form-control" id="allowanceManual-${allowanceRuleCounter}" name="allowance_rules[${allowanceRuleCounter}][allowance_name_manual]" placeholder="Enter allowance name" style="padding: 0.375rem; font-size: 0.8125rem;">
+        </div>
         <div style="flex: 1;">
-            <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #374151;">Price (Rs.)</label>
-            <input type="number" step="0.01" class="form-control" name="allowance_rules[${allowanceRuleCounter}][price]" placeholder="0.00" required>
+            <label style="display: block; margin-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #374151;">Price (Rs.)</label>
+            <input type="number" step="0.01" class="form-control" name="allowance_rules[${allowanceRuleCounter}][price]" placeholder="0.00" required style="padding: 0.375rem; font-size: 0.8125rem;">
+        </div>
+        <div style="flex: 0 0 180px;">
+            <label style="display: block; margin-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; color: #374151;">Calculation Type</label>
+            <div style="display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem; background: #f9fafb; border-radius: 0.25rem; border: 1px solid #e5e7eb;">
+                <input type="checkbox" id="attendanceMultiplier-${allowanceRuleCounter}" name="allowance_rules[${allowanceRuleCounter}][multiply_by_attendance]" value="1" style="width: 16px; height: 16px; cursor: pointer;">
+                <label for="attendanceMultiplier-${allowanceRuleCounter}" style="margin: 0; font-size: 0.75rem; color: #374151; cursor: pointer;">
+                    Attendance Count × Price
+                </label>
+            </div>
+            <small style="color: #6b7280; font-size: 0.6875rem; margin-top: 0.125rem; display: block;">
+                If checked, allowance = attendance days × price
+            </small>
         </div>
         <div style="flex: 0 0 auto;">
-            <button type="button" class="btn btn-danger" onclick="removeAllowanceRow(${allowanceRuleCounter})" style="margin-top: 1.5rem;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button type="button" class="btn btn-danger" onclick="removeAllowanceRow(${allowanceRuleCounter})" style="margin-top: 1.25rem; padding: 0.375rem 0.5rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3,6 5,6 21,6"></polyline>
                     <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
                     <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -1994,6 +2024,30 @@ function addAllowanceRow() {
     `;
 
     container.appendChild(row);
+}
+
+function handleAllowanceTypeChange(rowId) {
+    const typeSelect = document.getElementById(`allowanceType-${rowId}`);
+    const selectContainer = document.getElementById(`allowanceSelectContainer-${rowId}`);
+    const manualContainer = document.getElementById(`allowanceManualContainer-${rowId}`);
+    const selectField = document.getElementById(`allowanceSelect-${rowId}`);
+    const manualField = document.getElementById(`allowanceManual-${rowId}`);
+
+    if (typeSelect.value === 'manual') {
+        // Show manual input, hide dropdown
+        selectContainer.style.display = 'none';
+        manualContainer.style.display = 'block';
+        selectField.removeAttribute('required');
+        manualField.setAttribute('required', 'required');
+        manualField.value = '';
+    } else {
+        // Show dropdown, hide manual input
+        selectContainer.style.display = 'block';
+        manualContainer.style.display = 'none';
+        manualField.removeAttribute('required');
+        selectField.setAttribute('required', 'required');
+        manualField.value = '';
+    }
 }
 
 function removeAllowanceRow(rowId) {
@@ -2020,11 +2074,43 @@ function loadExistingAllowanceRules() {
             addAllowanceRow();
             const lastRow = document.querySelector('.allowance-rule-row:last-child');
             if (lastRow) {
-                const allowanceSelect = lastRow.querySelector('select[name*="[allowance_name]"]');
+                const allowanceName = allowanceRule.allowance_name || '';
                 const priceInput = lastRow.querySelector('input[name*="[price]"]');
+                const typeSelect = lastRow.querySelector('select[name*="[allowance_type]"]');
 
-                if (allowanceSelect) allowanceSelect.value = allowanceRule.allowance_name || '';
+                // Extract row ID from the row element
+                const rowIdMatch = lastRow.id.match(/allowanceRuleRow-(\d+)/);
+                const rowId = rowIdMatch ? parseInt(rowIdMatch[1]) : null;
+
+                if (!rowId) {
+                    console.error('Could not extract row ID from allowance rule row');
+                    return;
+                }
+
+                // Check if the allowance name exists in the allowances list
+                const allowanceExists = allowances.some(allowance => allowance.name === allowanceName);
+
+                if (allowanceExists) {
+                    // Use dropdown
+                    if (typeSelect) typeSelect.value = 'select';
+                    handleAllowanceTypeChange(rowId);
+                    const allowanceSelect = lastRow.querySelector('select[name*="[allowance_name]"]');
+                    if (allowanceSelect) allowanceSelect.value = allowanceName;
+                } else if (allowanceName) {
+                    // Use manual input for non-empty allowance names
+                    if (typeSelect) typeSelect.value = 'manual';
+                    handleAllowanceTypeChange(rowId);
+                    const allowanceManual = lastRow.querySelector('input[name*="[allowance_name_manual]"]');
+                    if (allowanceManual) allowanceManual.value = allowanceName;
+                }
+
                 if (priceInput) priceInput.value = allowanceRule.price || '';
+
+                // Handle attendance multiplier checkbox
+                const attendanceMultiplier = lastRow.querySelector('input[type="checkbox"][name*="[multiply_by_attendance]"]');
+                if (attendanceMultiplier) {
+                    attendanceMultiplier.checked = allowanceRule.multiply_by_attendance === true || allowanceRule.multiply_by_attendance === 1 || allowanceRule.multiply_by_attendance === '1';
+                }
             }
         });
     }
@@ -2046,13 +2132,24 @@ function saveAllowanceRules() {
     const rows = document.querySelectorAll('.allowance-rule-row');
 
     rows.forEach(row => {
-        const allowanceName = row.querySelector('select[name*="[allowance_name]"]').value;
-        const price = row.querySelector('input[name*="[price]"]').value;
+        const allowanceType = row.querySelector('select[name*="[allowance_type]"]')?.value;
+        let allowanceName = '';
+
+        // Get allowance name based on type
+        if (allowanceType === 'manual') {
+            allowanceName = row.querySelector('input[name*="[allowance_name_manual]"]')?.value?.trim();
+        } else {
+            allowanceName = row.querySelector('select[name*="[allowance_name]"]')?.value?.trim();
+        }
+
+        const price = row.querySelector('input[name*="[price]"]')?.value;
+        const multiplyByAttendance = row.querySelector('input[type="checkbox"][name*="[multiply_by_attendance]"]')?.checked || false;
 
         if (allowanceName && price) {
             allowanceRules.push({
                 allowance_name: allowanceName,
-                price: parseFloat(price)
+                price: parseFloat(price),
+                multiply_by_attendance: multiplyByAttendance
             });
         }
     });
@@ -3687,10 +3784,25 @@ function calculateRowTotal(rowNum) {
             // Set flag to indicate attendance was just updated - this will force coordination fee recalculation
             coordinationFeeInput.setAttribute('data-attendance-updated', 'true');
         }
+
+        // Clear custom allowance flags for allowances with multiply_by_attendance enabled
+        const allowanceInputs = row.querySelectorAll(`input[name^="rows[${rowNum}][allowances]"]`);
+        allowanceInputs.forEach(input => {
+            const multiplyByAttendance = input.dataset.multiplyByAttendance === 'true';
+            if (multiplyByAttendance) {
+                // Clear custom allowance flags to allow recalculation
+                input.removeAttribute('data-custom-allowance');
+                input.removeAttribute('data-manually-edited');
+                input.removeAttribute('data-loaded-from-db');
+                input.setAttribute('data-attendance-updated', 'true');
+            }
+        });
     }
 
     // Calculate attendance amount based on position salary
     calculateAttendanceAmount(rowNum, total).then(() => {
+        // Calculate allowances based on attendance (if multiply_by_attendance is enabled)
+        calculateAllowances(rowNum, total);
         // Apply job settings to this row when attendance changes
         applyJobSettingsToRow(rowNum);
         calculateRowNet(rowNum);
@@ -3866,6 +3978,45 @@ async function calculateAttendanceAmount(rowNum, presentDays) {
     }
 }
 
+// Function to calculate allowances based on attendance when multiply_by_attendance is enabled
+function calculateAllowances(rowNum, presentDays) {
+    const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
+    if (!row) return;
+
+    // Get all allowance inputs in this row
+    const allowanceInputs = row.querySelectorAll(`input[name^="rows[${rowNum}][allowances]"]`);
+
+    allowanceInputs.forEach(input => {
+        const multiplyByAttendance = input.dataset.multiplyByAttendance === 'true';
+        const allowancePrice = parseFloat(input.dataset.allowancePrice || 0);
+        const hasCustomValue = input.dataset.customAllowance === 'true';
+        const loadedFromDb = input.dataset.loadedFromDb === 'true';
+        const manuallyEdited = input.dataset.manuallyEdited === 'true';
+        const attendanceUpdated = input.dataset.attendanceUpdated === 'true';
+
+        // Only auto-calculate if multiply_by_attendance is enabled
+        if (multiplyByAttendance) {
+            const currentValue = parseFloat(input.value) || 0;
+            const previousCalculatedValue = parseFloat(input.dataset.lastCalculatedValue || 0);
+            const calculatedValue = presentDays * allowancePrice;
+
+            // Force update if attendance was just updated (custom value should be cleared)
+            // OR update if:
+            // 1. Field hasn't been manually edited, AND
+            // 2. Field is empty/zero OR matches previous calculated value (was auto-calculated)
+            if (attendanceUpdated || (!hasCustomValue && !loadedFromDb && !manuallyEdited &&
+                (currentValue === 0 || currentValue === previousCalculatedValue))) {
+                input.value = calculatedValue.toFixed(2);
+                input.dataset.lastCalculatedValue = calculatedValue.toFixed(2);
+                // Clear the attendance updated flag after updating
+                if (attendanceUpdated) {
+                    input.removeAttribute('data-attendance-updated');
+                }
+            }
+        }
+    });
+}
+
 function calculateRowNet(rowNum) {
     const row = document.querySelector(`tr:has(input[name="rows[${rowNum}][amount]"])`);
     const amount = parseFloat(row.querySelector(`input[name="rows[${rowNum}][amount]"]`).value) || 0;
@@ -3945,6 +4096,12 @@ function markAsCustom(inputElement, fieldType) {
         inputElement.dataset.customCoordinationFee = 'true';
         inputElement.dataset.manuallyEdited = 'true';
     }
+}
+
+// Mark allowance field as custom when user manually edits it
+function markAllowanceAsCustom(inputElement, allowanceName) {
+    inputElement.dataset.customAllowance = 'true';
+    inputElement.dataset.manuallyEdited = 'true';
 }
 
 function calculateGrandTotal() {
@@ -4161,6 +4318,19 @@ function loadExistingSalarySheets(jobId) {
                     rowIndex++;
                 }
             });
+
+            // Recalculate allowances for rows with multiply_by_attendance enabled
+            setTimeout(() => {
+                const rows = document.querySelectorAll('#promoterRows tr');
+                rows.forEach((row, idx) => {
+                    const rowNum = idx + 1;
+                    const attendanceTotalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+                    if (attendanceTotalInput) {
+                        const presentDays = parseFloat(attendanceTotalInput.value) || 0;
+                        calculateAllowances(rowNum, presentDays);
+                    }
+                });
+            }, 100);
 
             // Update grand total
             calculateGrandTotal();
@@ -4492,6 +4662,16 @@ function updateTableRows(jsonData) {
     // Update grand total after all rows are processed and calculations are done
     setTimeout(() => {
         console.log('Updating grand total after all rows processed...');
+        // Recalculate allowances for rows with multiply_by_attendance enabled
+        const rows = document.querySelectorAll('#promoterRows tr');
+        rows.forEach((row, idx) => {
+            const rowNum = idx + 1;
+            const attendanceTotalInput = row.querySelector(`input[name="rows[${rowNum}][attendance_total]"]`);
+            if (attendanceTotalInput) {
+                const presentDays = parseFloat(attendanceTotalInput.value) || 0;
+                calculateAllowances(rowNum, presentDays);
+            }
+        });
         calculateGrandTotal();
         updatePromoterDropdowns(); // Update dropdowns after all rows are added
         console.log('Grand total updated after pulling data');

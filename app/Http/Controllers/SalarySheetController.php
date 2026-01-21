@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SalarySheetCompleteNotification;
+use App\Mail\SalarySheetApprovedNotification;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -33,7 +34,7 @@ class SalarySheetController extends Controller
      */
     public function index()
     {
-        $query = SalarySheet::with(['job.client', 'items.position'])
+        $query = SalarySheet::with(['job.client', 'items.position', 'creator'])
             ->withCount(['items'])
             ->orderBy('created_at', 'desc');
 
@@ -126,6 +127,7 @@ class SalarySheetController extends Controller
                 'status' => $request->status,
                 'location' => $request->location,
                 'notes' => $request->notes,
+                'created_by' => auth()->id(),
             ]);
 
             Log::info('Created salary sheet:', $salarySheet->toArray());
@@ -268,7 +270,7 @@ class SalarySheetController extends Controller
             }
         }
 
-        $salarySheet->load(['job.client', 'items.position']);
+        $salarySheet->load(['job.client', 'items.position', 'items.promoter', 'creator']);
 
         return view('admin.salary-sheets.show', compact('salarySheet'));
     }
@@ -510,6 +512,7 @@ class SalarySheetController extends Controller
                             'status' => $request->status,
                             'location' => $request->location,
                             'notes' => $request->notes,
+                            'created_by' => auth()->id(),
                         ]);
 
                         Log::info('Created new salary sheet for job_id:', [
@@ -822,6 +825,9 @@ class SalarySheetController extends Controller
                 'approved_at' => now()
             ]);
 
+            // Send email notification to officer
+            $this->sendApprovalNotificationToOfficer($salarySheet, $user);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Salary sheet ' . $salarySheet->sheet_no . ' has been approved successfully.'
@@ -914,6 +920,85 @@ class SalarySheetController extends Controller
             Log::info('=== EMAIL NOTIFICATION DEBUG END ===');
         } catch (\Exception $e) {
             Log::error('Error sending salary sheet notifications to reporters', [
+                'sheet_no' => $salarySheet->sheet_no,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Send email notification to officer when salary sheet is approved
+     */
+    private function sendApprovalNotificationToOfficer(SalarySheet $salarySheet, $approvedBy = null)
+    {
+        try {
+            $mailDriver = config('mail.default');
+
+            // Check if mail driver is set to 'log' (emails won't actually be sent)
+            if ($mailDriver === 'log') {
+                Log::warning('Mail driver is set to "log" - emails will be logged but not actually sent. Change MAIL_MAILER to "smtp" in .env to send real emails.');
+            }
+
+            Log::info('=== APPROVAL EMAIL NOTIFICATION DEBUG START ===');
+            Log::info('Mail driver: ' . $mailDriver);
+            Log::info('Mail from: ' . config('mail.from.address'));
+
+            // Load job and officer relationship
+            $salarySheet->load(['job.officer']);
+
+            // Check if job exists and has an officer
+            if (!$salarySheet->job) {
+                Log::warning('No job found for salary sheet - cannot send approval notification', [
+                    'sheet_no' => $salarySheet->sheet_no
+                ]);
+                return;
+            }
+
+            $officer = $salarySheet->job->officer;
+
+            if (!$officer) {
+                Log::warning('No officer assigned to job - cannot send approval notification', [
+                    'sheet_no' => $salarySheet->sheet_no,
+                    'job_id' => $salarySheet->job->id
+                ]);
+                return;
+            }
+
+            if (!$officer->email) {
+                Log::warning('Officer does not have an email address - cannot send approval notification', [
+                    'sheet_no' => $salarySheet->sheet_no,
+                    'officer_id' => $officer->id
+                ]);
+                return;
+            }
+
+            Log::info('Attempting to send approval email to officer:', [
+                'officer_id' => $officer->id,
+                'officer_email' => $officer->email,
+                'officer_name' => $officer->name,
+                'sheet_no' => $salarySheet->sheet_no
+            ]);
+
+            // Send email to officer
+            Mail::to($officer->email)->send(new SalarySheetApprovedNotification($salarySheet, $approvedBy));
+
+            if ($mailDriver === 'log') {
+                Log::info('Approval email logged (not actually sent - mail driver is "log")', [
+                    'officer_email' => $officer->email,
+                    'sheet_no' => $salarySheet->sheet_no
+                ]);
+            } else {
+                Log::info('Salary sheet approval notification sent to officer', [
+                    'officer_email' => $officer->email,
+                    'sheet_no' => $salarySheet->sheet_no,
+                    'mail_driver' => $mailDriver
+                ]);
+            }
+
+            Log::info('=== APPROVAL EMAIL NOTIFICATION DEBUG END ===');
+        } catch (\Exception $e) {
+            Log::error('Error sending salary sheet approval notification to officer', [
                 'sheet_no' => $salarySheet->sheet_no,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

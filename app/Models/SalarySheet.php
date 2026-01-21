@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class SalarySheet extends Model
 {
@@ -17,6 +18,7 @@ class SalarySheet extends Model
         'status',
         'location',
         'notes',
+        'created_by',
     ];
 
     protected $casts = [
@@ -34,10 +36,10 @@ class SalarySheet extends Model
         $prefix = 'SAL';
         $year = date('Y');
         $month = date('n');
-        
+
         // Create the base pattern for this month/year
         $basePattern = sprintf('%s/%d/%02d/', $prefix, $year, $month);
-        
+
         // Get all sheet numbers that start with this pattern
         $existingSheets = self::where('sheet_no', 'like', $basePattern . '%')
             ->orderBy('sheet_no', 'desc')
@@ -75,6 +77,14 @@ class SalarySheet extends Model
     public function items()
     {
         return $this->hasMany(EmployersSalarySheetItem::class, 'sheet_no', 'sheet_no');
+    }
+
+    /**
+     * Get the user who created this salary sheet
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
